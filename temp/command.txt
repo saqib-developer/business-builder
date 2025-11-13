@@ -1,0 +1,15 @@
+Project Description
+
+E-Commerce Launchpad is a business helper platform designed to guide and empower individuals—especially non-technical users—in building and launching their online stores. It simplifies the e-commerce startup journey by offering step-by-step guidance, pre-made website templates, logo and brand design tools, and essential business resources to help users establish a strong digital presence. The platform serves as an all-in-one solution for aspiring entrepreneurs to build their brand, add products, create a professional website, and access design and marketing support—all within a single, easy-to-use interface. By providing structured guidance and integrated tools, the platform removes technical barriers and helps users confidently transform their ideas into successful online businesses.
+
+Technologies & General Requirements
+
+Framework: Next.js (App Router) with TypeScript
+
+Styling: Tailwind CSS (light theme, responsive, professional)
+
+Backend & Services: Firebase (Auth, Firestore)
+
+Design Principles: Professional, modern, performant, mobile-friendly, SEO optimized
+
+Main Theme Colors: Royal Blue and Cool Gray
