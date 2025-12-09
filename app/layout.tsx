@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "E-Commerce Launchpad - Build Your Online Store",
+  title: "Business Builder - From Idea to Digital Presence",
   description:
-    "All-in-one platform to build, design, and manage your e-commerce business. No technical skills required.",
+    "Transform your business idea into reality. Create your brand identity, claim social handles, and launch your website - all in one place. No technical skills required.",
 };
 
 export default function RootLayout({

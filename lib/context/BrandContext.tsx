@@ -7,12 +7,15 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { BrandSettings } from "@/lib/types";
+import { BrandSettings, OnboardingData } from "@/lib/types";
 
 interface BrandContextType {
   brandSettings: BrandSettings;
+  onboardingData: Partial<OnboardingData> | null;
   updateBrandSettings: (settings: Partial<BrandSettings>) => void;
+  updateOnboardingData: (data: Partial<OnboardingData>) => void;
   resetBrandSettings: () => void;
+  isOnboardingComplete: boolean;
 }
 
 const defaultBrandSettings: BrandSettings = {
@@ -28,6 +31,7 @@ const BrandContext = createContext<BrandContextType | undefined>(undefined);
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [brandSettings, setBrandSettings] =
     useState<BrandSettings>(defaultBrandSettings);
+  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData> | null>(null);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -41,6 +45,29 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Load onboarding data
+  useEffect(() => {
+    const savedOnboarding = localStorage.getItem("onboarding_data");
+    if (savedOnboarding) {
+      try {
+        const data = JSON.parse(savedOnboarding);
+        setOnboardingData(data);
+        
+        // Sync onboarding data with brand settings
+        if (data.businessName) {
+          setBrandSettings((prev) => ({
+            ...prev,
+            businessName: data.businessName,
+            logo: data.logo?.url,
+            selectedTemplateId: data.website?.templateId || prev.selectedTemplateId,
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading onboarding data:", error);
+      }
+    }
+  }, []);
+
   // Save settings to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("brandSettings", JSON.stringify(brandSettings));
@@ -50,14 +77,29 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     setBrandSettings((prev) => ({ ...prev, ...settings }));
   };
 
+  const updateOnboardingData = (data: Partial<OnboardingData>) => {
+    const updated = { ...onboardingData, ...data };
+    setOnboardingData(updated);
+    localStorage.setItem("onboarding_data", JSON.stringify(updated));
+  };
+
   const resetBrandSettings = () => {
     setBrandSettings(defaultBrandSettings);
     localStorage.removeItem("brandSettings");
   };
 
+  const isOnboardingComplete = onboardingData?.isComplete || false;
+
   return (
     <BrandContext.Provider
-      value={{ brandSettings, updateBrandSettings, resetBrandSettings }}
+      value={{ 
+        brandSettings, 
+        onboardingData,
+        updateBrandSettings, 
+        updateOnboardingData,
+        resetBrandSettings,
+        isOnboardingComplete,
+      }}
     >
       {children}
     </BrandContext.Provider>

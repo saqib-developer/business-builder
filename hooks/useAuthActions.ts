@@ -38,10 +38,29 @@ export function useAuthActions() {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      // Get the stored redirect URL or default to home
-      const redirectUrl = sessionStorage.getItem("redirectUrl") || "/";
+      // Check if user has completed onboarding
+      const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
+      let shouldRedirectToOnboarding = false;
+      
+      if (onboardingData) {
+        try {
+          const data = JSON.parse(onboardingData);
+          shouldRedirectToOnboarding = !data.isComplete;
+        } catch (e) {
+          shouldRedirectToOnboarding = true;
+        }
+      } else {
+        shouldRedirectToOnboarding = true;
+      }
+
+      // Get the stored redirect URL or default based on onboarding status
+      let redirectUrl = sessionStorage.getItem("redirectUrl");
+      if (!redirectUrl) {
+        redirectUrl = shouldRedirectToOnboarding ? "/onboarding" : "/dashboard";
+      }
       sessionStorage.removeItem("redirectUrl");
       router.push(redirectUrl);
 
@@ -102,8 +121,27 @@ export function useAuthActions() {
         console.log("Existing Google user found in Firestore");
       }
 
-      // Get the stored redirect URL or default to home
-      const redirectUrl = sessionStorage.getItem("redirectUrl") || "/";
+      // Check if user has completed onboarding
+      const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
+      let shouldRedirectToOnboarding = false;
+      
+      if (onboardingData) {
+        try {
+          const data = JSON.parse(onboardingData);
+          shouldRedirectToOnboarding = !data.isComplete;
+        } catch (e) {
+          shouldRedirectToOnboarding = true;
+        }
+      } else {
+        // New Google user should go through onboarding
+        shouldRedirectToOnboarding = !userDoc.exists();
+      }
+
+      // Get the stored redirect URL or default based on onboarding status
+      let redirectUrl = sessionStorage.getItem("redirectUrl");
+      if (!redirectUrl) {
+        redirectUrl = shouldRedirectToOnboarding ? "/onboarding" : "/dashboard";
+      }
       sessionStorage.removeItem("redirectUrl");
       router.push(redirectUrl);
 
@@ -197,10 +235,9 @@ export function useAuthActions() {
       await setDoc(doc(firestore, "users", user.uid), userData);
       console.log("New email user document created in Firestore");
 
-      // Get the stored redirect URL or default to home
-      const redirectUrl = sessionStorage.getItem("redirectUrl") || "/";
+      // New users always go to onboarding
       sessionStorage.removeItem("redirectUrl");
-      router.push(redirectUrl);
+      router.push("/onboarding");
 
       return { success: true };
     } catch (err: any) {
@@ -255,12 +292,38 @@ export function useAuthActions() {
 
         await setDoc(userDocRef, userData);
         console.log("New Google signup user document created in Firestore");
+        
+        // New Google users go to onboarding
+        sessionStorage.removeItem("redirectUrl");
+        router.push("/onboarding");
       } else {
         console.log("Existing Google user found during signup");
+        
+        // Check if existing user has completed onboarding
+        const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
+        let shouldRedirectToOnboarding = false;
+        
+        if (onboardingData) {
+          try {
+            const data = JSON.parse(onboardingData);
+            shouldRedirectToOnboarding = !data.isComplete;
+          } catch (e) {
+            shouldRedirectToOnboarding = true;
+          }
+        } else {
+          shouldRedirectToOnboarding = true;
+        }
+
+        // Get the stored redirect URL or default based on onboarding status
+        let redirectUrl = sessionStorage.getItem("redirectUrl");
+        if (!redirectUrl) {
+          redirectUrl = shouldRedirectToOnboarding ? "/onboarding" : "/dashboard";
+        }
+        sessionStorage.removeItem("redirectUrl");
+        router.push(redirectUrl);
       }
 
-      // Get the stored redirect URL or default to home
-      const redirectUrl = sessionStorage.getItem("redirectUrl") || "/";
+      return { success: true };
       sessionStorage.removeItem("redirectUrl");
       router.push(redirectUrl);
 

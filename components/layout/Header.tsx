@@ -17,8 +17,8 @@ export default function Header() {
     }
   };
 
-  // Don't show header on auth pages
-  if (pathname?.includes("/sign-in") || pathname?.includes("/sign-up")) {
+  // Don't show header on auth pages or onboarding
+  if (pathname?.includes("/sign-in") || pathname?.includes("/sign-up") || pathname?.includes("/onboarding")) {
     return null;
   }
 
@@ -43,6 +43,14 @@ export default function Header() {
               }`}
             >
               Home
+            </Link>
+            <Link
+              href="/about"
+              className={`text-sm font-medium transition-colors hover:text-blue-400 ${
+                pathname === "/about" ? "text-blue-400" : "text-gray-300"
+              }`}
+            >
+              About Us
             </Link>
             {user && (
               <>

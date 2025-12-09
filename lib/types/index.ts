@@ -9,3 +9,6 @@ export * from "./user";
 
 // Template and brand settings
 export * from "./template";
+
+// Onboarding and business setup
+export * from "./onboarding";
