@@ -324,10 +324,6 @@ export function useAuthActions() {
       }
 
       return { success: true };
-      sessionStorage.removeItem("redirectUrl");
-      router.push(redirectUrl);
-
-      return { success: true };
     } catch (err: any) {
       console.error("Google signup error:", err);
       return {
