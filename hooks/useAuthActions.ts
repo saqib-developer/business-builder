@@ -38,13 +38,17 @@ export function useAuthActions() {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // Check if user has completed onboarding
       const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
       let shouldRedirectToOnboarding = false;
-      
+
       if (onboardingData) {
         try {
           const data = JSON.parse(onboardingData);
@@ -124,7 +128,7 @@ export function useAuthActions() {
       // Check if user has completed onboarding
       const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
       let shouldRedirectToOnboarding = false;
-      
+
       if (onboardingData) {
         try {
           const data = JSON.parse(onboardingData);
@@ -292,17 +296,17 @@ export function useAuthActions() {
 
         await setDoc(userDocRef, userData);
         console.log("New Google signup user document created in Firestore");
-        
+
         // New Google users go to onboarding
         sessionStorage.removeItem("redirectUrl");
         router.push("/onboarding");
       } else {
         console.log("Existing Google user found during signup");
-        
+
         // Check if existing user has completed onboarding
         const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
         let shouldRedirectToOnboarding = false;
-        
+
         if (onboardingData) {
           try {
             const data = JSON.parse(onboardingData);
@@ -317,7 +321,9 @@ export function useAuthActions() {
         // Get the stored redirect URL or default based on onboarding status
         let redirectUrl = sessionStorage.getItem("redirectUrl");
         if (!redirectUrl) {
-          redirectUrl = shouldRedirectToOnboarding ? "/onboarding" : "/dashboard";
+          redirectUrl = shouldRedirectToOnboarding
+            ? "/onboarding"
+            : "/dashboard";
         }
         sessionStorage.removeItem("redirectUrl");
         router.push(redirectUrl);

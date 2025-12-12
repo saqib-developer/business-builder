@@ -25,7 +25,8 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const { onboardingData, brandSettings } = useBrand();
   const router = useRouter();
-  const [localOnboardingData, setLocalOnboardingData] = useState<Partial<OnboardingData> | null>(null);
+  const [localOnboardingData, setLocalOnboardingData] =
+    useState<Partial<OnboardingData> | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,7 +41,7 @@ export default function DashboardPage() {
         try {
           const data = JSON.parse(saved);
           setLocalOnboardingData(data);
-          
+
           // If onboarding not complete, redirect to onboarding
           if (!data.isComplete) {
             router.push("/onboarding");
@@ -71,8 +72,8 @@ export default function DashboardPage() {
     return null;
   }
 
-  const completionPercentage = localOnboardingData?.completedSteps 
-    ? (localOnboardingData.completedSteps.length / 5) * 100 
+  const completionPercentage = localOnboardingData?.completedSteps
+    ? (localOnboardingData.completedSteps.length / 5) * 100
     : 0;
 
   const quickActions = [
@@ -139,8 +140,12 @@ export default function DashboardPage() {
         <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-8 mb-8 text-white shadow-xl">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold mb-2">{localOnboardingData.businessName || "Your Business"}</h2>
-              <p className="text-blue-100">Your digital empire is taking shape! 🚀</p>
+              <h2 className="text-3xl font-bold mb-2">
+                {localOnboardingData.businessName || "Your Business"}
+              </h2>
+              <p className="text-blue-100">
+                Your digital empire is taking shape! 🚀
+              </p>
             </div>
             <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
               <div className="text-sm text-blue-100">Setup Complete</div>
@@ -165,7 +170,9 @@ export default function DashboardPage() {
                 <span className="font-semibold">Logo</span>
               </div>
               <p className="text-sm text-blue-100">
-                {localOnboardingData.logo?.type ? `✓ ${localOnboardingData.logo.type}` : "Not set"}
+                {localOnboardingData.logo?.type
+                  ? `✓ ${localOnboardingData.logo.type}`
+                  : "Not set"}
               </p>
             </div>
 
@@ -176,8 +183,12 @@ export default function DashboardPage() {
                 <span className="font-semibold">Social Media</span>
               </div>
               <p className="text-sm text-blue-100">
-                {localOnboardingData.socialMedia 
-                  ? `${Object.values(localOnboardingData.socialMedia).filter(p => p.clicked).length}/4 platforms`
+                {localOnboardingData.socialMedia
+                  ? `${
+                      Object.values(localOnboardingData.socialMedia).filter(
+                        (p) => p.clicked
+                      ).length
+                    }/4 platforms`
                   : "0/4 platforms"}
               </p>
             </div>
@@ -189,7 +200,9 @@ export default function DashboardPage() {
                 <span className="font-semibold">Website</span>
               </div>
               <p className="text-sm text-blue-100">
-                {localOnboardingData.website?.type ? `✓ ${localOnboardingData.website.type}` : "Not set"}
+                {localOnboardingData.website?.type
+                  ? `✓ ${localOnboardingData.website.type}`
+                  : "Not set"}
               </p>
             </div>
           </div>
@@ -210,11 +223,15 @@ export default function DashboardPage() {
                 <div className="flex items-start gap-3">
                   <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">Business Name</h4>
-                    <p className="text-sm text-gray-600">{localOnboardingData.businessName}</p>
+                    <h4 className="font-semibold text-gray-900">
+                      Business Name
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {localOnboardingData.businessName}
+                    </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => router.push("/onboarding")}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
@@ -223,11 +240,13 @@ export default function DashboardPage() {
               </div>
 
               {/* Logo */}
-              <div className={`flex items-start justify-between p-4 rounded-lg border ${
-                localOnboardingData.logo?.type 
-                  ? "bg-green-50 border-green-200"
-                  : "bg-yellow-50 border-yellow-200"
-              }`}>
+              <div
+                className={`flex items-start justify-between p-4 rounded-lg border ${
+                  localOnboardingData.logo?.type
+                    ? "bg-green-50 border-green-200"
+                    : "bg-yellow-50 border-yellow-200"
+                }`}
+              >
                 <div className="flex items-start gap-3">
                   {localOnboardingData.logo?.type ? (
                     <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -237,16 +256,16 @@ export default function DashboardPage() {
                   <div>
                     <h4 className="font-semibold text-gray-900">Logo</h4>
                     <p className="text-sm text-gray-600">
-                      {localOnboardingData.logo?.type 
+                      {localOnboardingData.logo?.type
                         ? `${localOnboardingData.logo.type} logo`
                         : "Add a logo to strengthen your brand"}
                     </p>
                   </div>
                 </div>
                 {localOnboardingData.logo?.url && (
-                  <img 
-                    src={localOnboardingData.logo.url} 
-                    alt="Logo" 
+                  <img
+                    src={localOnboardingData.logo.url}
+                    alt="Logo"
                     className="w-12 h-12 object-contain rounded"
                   />
                 )}
@@ -257,10 +276,16 @@ export default function DashboardPage() {
                 <div className="flex items-start gap-3">
                   <FiShare2 className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">Social Media</h4>
+                    <h4 className="font-semibold text-gray-900">
+                      Social Media
+                    </h4>
                     <p className="text-sm text-gray-600">
-                      {localOnboardingData.socialMedia 
-                        ? `${Object.values(localOnboardingData.socialMedia).filter(p => p.clicked).length} platforms secured`
+                      {localOnboardingData.socialMedia
+                        ? `${
+                            Object.values(
+                              localOnboardingData.socialMedia
+                            ).filter((p) => p.clicked).length
+                          } platforms secured`
                         : "No platforms set up yet"}
                     </p>
                   </div>
@@ -274,7 +299,7 @@ export default function DashboardPage() {
                   <div>
                     <h4 className="font-semibold text-gray-900">Website</h4>
                     <p className="text-sm text-gray-600">
-                      {localOnboardingData.website?.templateId 
+                      {localOnboardingData.website?.templateId
                         ? "Template selected - ready to customize"
                         : localOnboardingData.website?.type || "Not configured"}
                     </p>
@@ -309,8 +334,12 @@ export default function DashboardPage() {
                     <FiLayout className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 group-hover:text-blue-600">Customize Your Website</h4>
-                    <p className="text-sm text-gray-600">Edit colors, text, and images</p>
+                    <h4 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                      Customize Your Website
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Edit colors, text, and images
+                    </p>
                   </div>
                 </div>
               </Link>
@@ -321,8 +350,12 @@ export default function DashboardPage() {
                     <FiGlobe className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Domain & Hosting</h4>
-                    <p className="text-sm text-gray-600">Coming Soon (FYP Phase 2)</p>
+                    <h4 className="font-semibold text-gray-900">
+                      Domain & Hosting
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Coming Soon (FYP Phase 2)
+                    </p>
                   </div>
                   <FiClock className="w-5 h-5 text-gray-400" />
                 </div>
@@ -334,8 +367,12 @@ export default function DashboardPage() {
                     <FiPackage className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Add Products</h4>
-                    <p className="text-sm text-gray-600">Coming Soon (FYP Phase 2)</p>
+                    <h4 className="font-semibold text-gray-900">
+                      Add Products
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Coming Soon (FYP Phase 2)
+                    </p>
                   </div>
                   <FiClock className="w-5 h-5 text-gray-400" />
                 </div>
@@ -347,8 +384,12 @@ export default function DashboardPage() {
                     <FiShoppingBag className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Launch Store</h4>
-                    <p className="text-sm text-gray-600">Coming Soon (FYP Phase 2)</p>
+                    <h4 className="font-semibold text-gray-900">
+                      Launch Store
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Coming Soon (FYP Phase 2)
+                    </p>
                   </div>
                   <FiClock className="w-5 h-5 text-gray-400" />
                 </div>
