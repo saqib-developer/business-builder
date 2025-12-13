@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { FiArrowRight, FiCheckCircle, FiExternalLink, FiAlertCircle } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiCheckCircle,
+  FiExternalLink,
+  FiAlertCircle,
+} from "react-icons/fi";
 import { FaTiktok, FaInstagram, FaFacebook, FaWhatsapp } from "react-icons/fa";
 import MotivationalQuote from "./MotivationalQuote";
 import { SocialMediaSetup } from "@/lib/types/onboarding";
@@ -10,12 +15,14 @@ interface Step4SocialMediaProps {
   initialValue?: SocialMediaSetup;
   onNext: (socialData: SocialMediaSetup) => void;
   onBack: () => void;
+  isEditing?: boolean;
 }
 
 export default function Step4SocialMedia({
   initialValue,
   onNext,
   onBack,
+  isEditing = false,
 }: Step4SocialMediaProps) {
   const [socialMedia, setSocialMedia] = useState<SocialMediaSetup>(
     initialValue || {
@@ -62,7 +69,10 @@ export default function Step4SocialMedia({
     },
   ];
 
-  const handlePlatformClick = (platformId: keyof SocialMediaSetup, url: string) => {
+  const handlePlatformClick = (
+    platformId: keyof SocialMediaSetup,
+    url: string
+  ) => {
     // Mark as clicked
     setSocialMedia((prev) => ({
       ...prev,
@@ -76,8 +86,12 @@ export default function Step4SocialMedia({
     window.open(url, "_blank");
   };
 
-  const allPlatformsClicked = Object.values(socialMedia).every((platform) => platform.clicked);
-  const completedCount = Object.values(socialMedia).filter((platform) => platform.clicked).length;
+  const allPlatformsClicked = Object.values(socialMedia).every(
+    (platform) => platform.clicked
+  );
+  const completedCount = Object.values(socialMedia).filter(
+    (platform) => platform.clicked
+  ).length;
 
   const handleContinue = () => {
     if (allPlatformsClicked) {
@@ -98,18 +112,20 @@ export default function Step4SocialMedia({
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl mb-6">
           <FiCheckCircle className="w-10 h-10 text-white" />
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           Claim Your Social Media Handles
         </h1>
-        
+
         <p className="text-xl text-gray-600 mb-6">
           Secure your business name across all major platforms 🚀
         </p>
 
         {/* Progress Indicator */}
         <div className="inline-flex items-center gap-3 bg-blue-100 text-blue-700 px-6 py-3 rounded-full">
-          <span className="font-bold text-lg">{completedCount} / {platforms.length}</span>
+          <span className="font-bold text-lg">
+            {completedCount} / {platforms.length}
+          </span>
           <span>Platforms Secured</span>
         </div>
       </div>
@@ -137,11 +153,15 @@ export default function Step4SocialMedia({
               )}
 
               <div className="flex items-center gap-4 mb-4">
-                <div className={`w-16 h-16 ${platform.color} rounded-xl flex items-center justify-center text-white text-3xl`}>
+                <div
+                  className={`w-16 h-16 ${platform.color} rounded-xl flex items-center justify-center text-white text-3xl`}
+                >
                   <Icon />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{platform.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {platform.name}
+                  </h3>
                   <p className="text-sm text-gray-500">
                     {isCompleted ? "✓ Visited" : "Not visited yet"}
                   </p>
@@ -149,7 +169,9 @@ export default function Step4SocialMedia({
               </div>
 
               <button
-                onClick={() => handlePlatformClick(platform.id, platform.signupUrl)}
+                onClick={() =>
+                  handlePlatformClick(platform.id, platform.signupUrl)
+                }
                 className={`w-full flex items-center justify-center gap-2 ${platform.color} ${platform.hoverColor} text-white px-6 py-3 rounded-lg font-semibold transition-all`}
               >
                 {isCompleted ? "Visit Again" : "Create Account"}
@@ -167,8 +189,9 @@ export default function Step4SocialMedia({
           <div>
             <h3 className="font-bold text-gray-900 mb-2">Why This Matters</h3>
             <p className="text-gray-700 mb-3">
-              Claiming your business name across all platforms ensures consistency and prevents 
-              others from using your brand name. This is crucial for:
+              Claiming your business name across all platforms ensures
+              consistency and prevents others from using your brand name. This
+              is crucial for:
             </p>
             <ul className="space-y-1 text-gray-700">
               <li className="flex items-start gap-2">
@@ -199,14 +222,23 @@ export default function Step4SocialMedia({
           onClick={onBack}
           className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
         >
-          Back
+          {isEditing ? "Back to Dashboard" : "Back"}
         </button>
         <button
           onClick={handleContinue}
           className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-4 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg"
         >
-          {allPlatformsClicked ? "Continue" : "Skip for Now"}
-          <FiArrowRight className="w-5 h-5" />
+          {isEditing ? (
+            <>
+              <FiCheckCircle className="w-5 h-5" />
+              Save Changes
+            </>
+          ) : (
+            <>
+              {allPlatformsClicked ? "Continue" : "Skip for Now"}
+              <FiArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
 
@@ -222,8 +254,8 @@ export default function Step4SocialMedia({
                 Are You Sure?
               </h3>
               <p className="text-gray-600">
-                We highly recommend securing all handles to maximize your client reach and 
-                protect your brand identity!
+                We highly recommend securing all handles to maximize your client
+                reach and protect your brand identity!
               </p>
             </div>
 

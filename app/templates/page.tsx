@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -17,6 +17,26 @@ export default function TemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
     brandSettings.selectedTemplateId
   );
+
+  // Load the template from onboarding data if it exists
+  useEffect(() => {
+    if (user && !selectedTemplate) {
+      const saved = localStorage.getItem(`onboarding_${user.id}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.website?.templateId) {
+            setSelectedTemplate(data.website.templateId);
+            updateBrandSettings({
+              selectedTemplateId: data.website.templateId,
+            });
+          }
+        } catch (error) {
+          console.error("Error loading template from onboarding:", error);
+        }
+      }
+    }
+  }, [user, selectedTemplate, updateBrandSettings]);
 
   if (loading) {
     return (
@@ -37,6 +57,26 @@ export default function TemplatesPage() {
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
     updateBrandSettings({ selectedTemplateId: templateId });
+
+    // Also save to onboarding data
+    if (user) {
+      const saved = localStorage.getItem(`onboarding_${user.id}`);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          data.website = {
+            ...data.website,
+            templateId: templateId,
+            type:
+              TEMPLATES.find((t) => t.id === templateId)?.name || "Template",
+          };
+          localStorage.setItem(`onboarding_${user.id}`, JSON.stringify(data));
+        } catch (error) {
+          console.error("Error updating onboarding data:", error);
+        }
+      }
+    }
+
     toast.success("Template selected!");
   };
 

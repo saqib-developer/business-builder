@@ -219,7 +219,10 @@ export default function DashboardPage() {
 
             <div className="space-y-4">
               {/* Business Name */}
-              <div className="flex items-start justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+              <button
+                onClick={() => router.push("/onboarding?step=2")}
+                className="w-full flex items-start justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:border-green-300 transition-all text-left group"
+              >
                 <div className="flex items-start gap-3">
                   <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                   <div>
@@ -231,29 +234,27 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => router.push("/onboarding")}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
+                <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
                   Edit
-                </button>
-              </div>
+                </span>
+              </button>
 
               {/* Logo */}
-              <div
-                className={`flex items-start justify-between p-4 rounded-lg border ${
+              <button
+                onClick={() => router.push("/onboarding?step=3")}
+                className={`w-full flex items-start justify-between p-4 rounded-lg border transition-all text-left group ${
                   localOnboardingData.logo?.type
-                    ? "bg-green-50 border-green-200"
-                    : "bg-yellow-50 border-yellow-200"
+                    ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
+                    : "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300"
                 }`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 flex-1">
                   {localOnboardingData.logo?.type ? (
                     <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                   ) : (
                     <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
                   )}
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-semibold text-gray-900">Logo</h4>
                     <p className="text-sm text-gray-600">
                       {localOnboardingData.logo?.type
@@ -262,17 +263,25 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                {localOnboardingData.logo?.url && (
-                  <img
-                    src={localOnboardingData.logo.url}
-                    alt="Logo"
-                    className="w-12 h-12 object-contain rounded"
-                  />
-                )}
-              </div>
+                <div className="flex items-center gap-3">
+                  {localOnboardingData.logo?.url && (
+                    <img
+                      src={localOnboardingData.logo.url}
+                      alt="Logo"
+                      className="w-12 h-12 object-contain rounded"
+                    />
+                  )}
+                  <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
+                    {localOnboardingData.logo?.type ? "Edit" : "Add"}
+                  </span>
+                </div>
+              </button>
 
               {/* Social Media */}
-              <div className="flex items-start justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <button
+                onClick={() => router.push("/onboarding?step=4")}
+                className="w-full flex items-start justify-between p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all text-left group"
+              >
                 <div className="flex items-start gap-3">
                   <FiShare2 className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
@@ -290,29 +299,52 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+                <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
+                  {localOnboardingData.socialMedia &&
+                  Object.values(localOnboardingData.socialMedia).filter(
+                    (p) => p.clicked
+                  ).length > 0
+                    ? "Edit"
+                    : "Setup"}
+                </span>
+              </button>
 
               {/* Website */}
               <div className="flex items-start justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                <div className="flex items-start gap-3">
+                <button
+                  onClick={() => router.push("/templates")}
+                  className="flex items-start gap-3 flex-1 text-left group"
+                >
                   <FiGlobe className="w-5 h-5 text-indigo-600 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-gray-900">Website</h4>
+                    <h4 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                      Website Template
+                    </h4>
                     <p className="text-sm text-gray-600">
                       {localOnboardingData.website?.templateId
                         ? "Template selected - ready to customize"
                         : localOnboardingData.website?.type || "Not configured"}
                     </p>
                   </div>
-                </div>
-                {localOnboardingData.website?.templateId && (
-                  <Link
-                    href={`/templates/preview/${localOnboardingData.website.templateId}`}
+                </button>
+                <div className="flex items-center gap-2">
+                  {localOnboardingData.website?.templateId && (
+                    <Link
+                      href={`/templates/preview/${localOnboardingData.website.templateId}`}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      Preview
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => router.push("/templates")}
                     className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                   >
-                    Preview
-                  </Link>
-                )}
+                    {localOnboardingData.website?.templateId
+                      ? "Change"
+                      : "Select"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

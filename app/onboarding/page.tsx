@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
   OnboardingData,
@@ -16,9 +16,10 @@ import Step4SocialMedia from "@/components/onboarding/Step4SocialMedia";
 import Step5WebsiteBuilder from "@/components/onboarding/Step5WebsiteBuilder";
 import { FiCheck } from "react-icons/fi";
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>(
     {
@@ -33,13 +34,26 @@ export default function OnboardingPage() {
       return;
     }
 
+    // Check if user wants to edit a specific step
+    const stepParam = searchParams.get("step");
+
     // Load saved onboarding data from localStorage
     const saved = localStorage.getItem(`onboarding_${user.id}`);
     if (saved) {
       try {
         const data = JSON.parse(saved);
         setOnboardingData(data);
-        // Resume from last incomplete step
+
+        // If step parameter is provided, go to that step
+        if (stepParam) {
+          const requestedStep = parseInt(stepParam);
+          if (requestedStep >= 1 && requestedStep <= 5) {
+            setCurrentStep(requestedStep);
+            return;
+          }
+        }
+
+        // Otherwise, resume from last incomplete step
         if (data.completedSteps && data.completedSteps.length > 0) {
           const lastStep = Math.max(...data.completedSteps);
           setCurrentStep(lastStep + 1 > 5 ? 5 : lastStep + 1);
@@ -47,8 +61,14 @@ export default function OnboardingPage() {
       } catch (error) {
         console.error("Error loading onboarding data:", error);
       }
+    } else if (stepParam) {
+      // If no saved data but step param exists, go to that step
+      const requestedStep = parseInt(stepParam);
+      if (requestedStep >= 1 && requestedStep <= 5) {
+        setCurrentStep(requestedStep);
+      }
     }
-  }, [user, router]);
+  }, [user, router, searchParams]);
 
   const saveProgress = (data: Partial<OnboardingData>) => {
     if (user) {
@@ -73,6 +93,12 @@ export default function OnboardingPage() {
     return completedSteps;
   };
 
+  const isEditing = onboardingData?.isComplete === true;
+
+  const handleSaveAndReturn = () => {
+    router.push("/dashboard");
+  };
+
   const handleStep2Complete = (businessName: string) => {
     const completedSteps = markStepComplete(2);
     saveProgress({
@@ -80,7 +106,11 @@ export default function OnboardingPage() {
       businessName,
       completedSteps,
     });
-    setCurrentStep(3);
+    if (isEditing) {
+      router.push("/dashboard");
+    } else {
+      setCurrentStep(3);
+    }
   };
 
   const handleStep3Complete = (logoData: LogoSetup) => {
@@ -90,7 +120,11 @@ export default function OnboardingPage() {
       logo: logoData,
       completedSteps,
     });
-    setCurrentStep(4);
+    if (isEditing) {
+      router.push("/dashboard");
+    } else {
+      setCurrentStep(4);
+    }
   };
 
   const handleStep4Complete = (socialData: SocialMediaSetup) => {
@@ -100,7 +134,11 @@ export default function OnboardingPage() {
       socialMedia: socialData,
       completedSteps,
     });
-    setCurrentStep(5);
+    if (isEditing) {
+      router.push("/dashboard");
+    } else {
+      setCurrentStep(5);
+    }
   };
 
   const handleStep5Complete = (websiteData: WebsiteSetup) => {
@@ -197,7 +235,8 @@ export default function OnboardingPage() {
           <Step2BusinessName
             initialValue={onboardingData.businessName}
             onNext={handleStep2Complete}
-            onBack={() => setCurrentStep(1)}
+            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(1)}
+            isEditing={isEditing}
           />
         )}
 
@@ -205,7 +244,8 @@ export default function OnboardingPage() {
           <Step3LogoSetup
             initialValue={onboardingData.logo}
             onNext={handleStep3Complete}
-            onBack={() => setCurrentStep(2)}
+            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(2)}
+            isEditing={isEditing}
           />
         )}
 
@@ -213,7 +253,8 @@ export default function OnboardingPage() {
           <Step4SocialMedia
             initialValue={onboardingData.socialMedia}
             onNext={handleStep4Complete}
-            onBack={() => setCurrentStep(3)}
+            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(3)}
+            isEditing={isEditing}
           />
         )}
 
@@ -226,5 +267,22 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { FiUpload, FiZap, FiMessageCircle, FiArrowRight, FiCheck } from "react-icons/fi";
+import {
+  FiUpload,
+  FiZap,
+  FiMessageCircle,
+  FiArrowRight,
+  FiCheck,
+} from "react-icons/fi";
 import MotivationalQuote from "./MotivationalQuote";
 import { LogoSetup } from "@/lib/types/onboarding";
 
@@ -9,18 +15,22 @@ interface Step3LogoSetupProps {
   initialValue?: LogoSetup;
   onNext: (logoData: LogoSetup) => void;
   onBack: () => void;
+  isEditing?: boolean;
 }
 
 export default function Step3LogoSetup({
   initialValue,
   onNext,
   onBack,
+  isEditing = false,
 }: Step3LogoSetupProps) {
-  const [selectedOption, setSelectedOption] = useState<"upload" | "ai-generated" | "custom" | null>(
-    initialValue?.type || null
-  );
+  const [selectedOption, setSelectedOption] = useState<
+    "upload" | "ai-generated" | "custom" | null
+  >(initialValue?.type || null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(initialValue?.url);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(
+    initialValue?.url
+  );
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,11 +95,11 @@ export default function Step3LogoSetup({
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl mb-6">
           <FiZap className="w-10 h-10 text-white" />
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           Create Your Brand Identity
         </h1>
-        
+
         <p className="text-xl text-gray-600">
           Your logo is the face of your business. Let's make it memorable! 🎨
         </p>
@@ -123,11 +133,15 @@ export default function Step3LogoSetup({
               </div>
             )}
 
-            <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${option.color} rounded-xl mb-4 text-white`}>
+            <div
+              className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${option.color} rounded-xl mb-4 text-white`}
+            >
               {option.icon}
             </div>
-            
-            <h3 className="text-xl font-bold text-gray-900 mb-2">{option.title}</h3>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {option.title}
+            </h3>
             <p className="text-gray-600">{option.description}</p>
           </div>
         ))}
@@ -146,9 +160,7 @@ export default function Step3LogoSetup({
                     className="max-w-xs max-h-64 object-contain rounded-lg shadow-lg"
                   />
                 </div>
-                <p className="text-gray-600">
-                  {uploadedFile?.name}
-                </p>
+                <p className="text-gray-600">{uploadedFile?.name}</p>
                 <label className="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 cursor-pointer transition-all">
                   <FiUpload className="w-5 h-5" />
                   Change Logo
@@ -191,12 +203,16 @@ export default function Step3LogoSetup({
       {selectedOption === "ai-generated" && (
         <div className="bg-purple-50 rounded-2xl p-8 border-2 border-purple-200 mb-8 text-center">
           <FiZap className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Logo Generation Coming Soon! 🎉</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            AI Logo Generation Coming Soon! 🎉
+          </h3>
           <p className="text-gray-600 mb-4">
-            We're working on bringing you free AI-powered logo generation. Stay tuned!
+            We're working on bringing you free AI-powered logo generation. Stay
+            tuned!
           </p>
           <p className="text-sm text-gray-500">
-            For now, you can upload your own logo or contact us for custom design.
+            For now, you can upload your own logo or contact us for custom
+            design.
           </p>
         </div>
       )}
@@ -204,7 +220,9 @@ export default function Step3LogoSetup({
       {selectedOption === "custom" && (
         <div className="bg-pink-50 rounded-2xl p-8 border-2 border-pink-200 mb-8 text-center">
           <FiMessageCircle className="w-16 h-16 text-pink-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Custom Logo Design 🎨</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            Custom Logo Design 🎨
+          </h3>
           <p className="text-gray-600 mb-4">
             Want a professionally designed custom logo? We'd love to help!
           </p>
@@ -229,7 +247,7 @@ export default function Step3LogoSetup({
           onClick={onBack}
           className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
         >
-          Back
+          {isEditing ? "Back to Dashboard" : "Back"}
         </button>
         <button
           onClick={handleContinue}
@@ -240,8 +258,19 @@ export default function Step3LogoSetup({
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          Continue
-          <FiArrowRight className="w-5 h-5" />
+          {isEditing ? (
+            selectedOption && (
+              <>
+                <FiCheck className="w-5 h-5" />
+                Save Changes
+              </>
+            )
+          ) : (
+            <>
+              Continue
+              <FiArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>

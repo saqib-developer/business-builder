@@ -8,29 +8,31 @@ interface Step2BusinessNameProps {
   initialValue?: string;
   onNext: (businessName: string) => void;
   onBack: () => void;
+  isEditing?: boolean;
 }
 
 export default function Step2BusinessName({
   initialValue = "",
   onNext,
   onBack,
+  isEditing = false,
 }: Step2BusinessNameProps) {
   const [businessName, setBusinessName] = useState(initialValue);
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!businessName.trim()) {
       setError("Please enter your business name");
       return;
     }
-    
+
     if (businessName.trim().length < 2) {
       setError("Business name must be at least 2 characters");
       return;
     }
-    
+
     onNext(businessName.trim());
   };
 
@@ -47,11 +49,11 @@ export default function Step2BusinessName({
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-6">
           <FiEdit3 className="w-10 h-10 text-white" />
         </div>
-        
+
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
           What's Your Business Name?
         </h1>
-        
+
         <p className="text-xl text-gray-600">
           This is the foundation of your brand. Choose wisely! ✨
         </p>
@@ -60,7 +62,10 @@ export default function Step2BusinessName({
       {/* Business Name Input */}
       <form onSubmit={handleSubmit} className="mb-12">
         <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200 mb-8">
-          <label htmlFor="businessName" className="block text-lg font-semibold text-gray-900 mb-3">
+          <label
+            htmlFor="businessName"
+            className="block text-lg font-semibold text-gray-900 mb-3"
+          >
             Business Name
           </label>
           <input
@@ -75,9 +80,7 @@ export default function Step2BusinessName({
             className="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 outline-none transition-all"
             autoFocus
           />
-          {error && (
-            <p className="mt-2 text-red-600 text-sm">{error}</p>
-          )}
+          {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
         </div>
 
         {/* Tips */}
@@ -108,14 +111,23 @@ export default function Step2BusinessName({
             onClick={onBack}
             className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
           >
-            Back
+            {isEditing ? "Back to Dashboard" : "Back"}
           </button>
           <button
             type="submit"
             className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-4 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg"
           >
-            Continue
-            <FiArrowRight className="w-5 h-5" />
+            {isEditing ? (
+              <>
+                <FiCheckCircle className="w-5 h-5" />
+                Save Changes
+              </>
+            ) : (
+              <>
+                Continue
+                <FiArrowRight className="w-5 h-5" />
+              </>
+            )}
           </button>
         </div>
       </form>
