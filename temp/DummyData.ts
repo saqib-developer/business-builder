@@ -1,4 +1,9 @@
-import { firestore } from "@/lib/firebase/firebase";
+// DEPRECATED: This file is no longer used since Firestore was removed
+// The app now uses localStorage for data persistence
+// Keeping this file for reference only
+
+/*
+// import { firestore } from "@/lib/firebase/firebase";
 import {
   collection,
   setDoc,
@@ -362,3 +367,4 @@ export default async function initializeDummyData() {
   👥 ${allUsers.length} users
 `);
 }
+*/

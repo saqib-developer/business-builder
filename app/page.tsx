@@ -249,7 +249,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="bg-gradient-to-b from-blue-50/30 to-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="text-center max-w-3xl mx-auto">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
             Launch Your Online Store
@@ -283,7 +283,7 @@ export default function Home() {
       {/* Features Section */}
       <section
         id="features"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24"
+        className="bg-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24"
       >
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -314,7 +314,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-gray-50 py-24">
+      <section className="bg-white py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -343,7 +343,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="bg-gradient-to-b from-white to-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-16 text-center text-white shadow-premium-lg hover:shadow-premium transition-all duration-300">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Ready to Build Your Business?
