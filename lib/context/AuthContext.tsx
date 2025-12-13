@@ -10,9 +10,9 @@ import {
   useCallback,
 } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, firestore } from "@/lib/firebase/firebase";
+import { auth } from "@/lib/firebase/firebase";
 import { User } from "@/lib/types";
+import { getLocalStorageItem } from "@/hooks/useLocalStorage";
 
 interface AuthContextType {
   user: User | null;
@@ -79,40 +79,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   };
 
-  // Helper function to convert Firestore data to User type
-  const convertFirestoreUser = (firestoreData: any, docId: string): User => {
+  // Helper function to convert localStorage data to User type
+  const convertLocalStorageUser = (localData: any, docId: string): User => {
     return {
       id: docId,
-      email: firestoreData.email || "",
-      firstName: firestoreData.firstName || "",
-      lastName: firestoreData.lastName || "",
-      country: firestoreData.country || "",
-      dob: firestoreData.dob?.toDate
-        ? firestoreData.dob.toDate()
-        : new Date(firestoreData.dob || Date.now()),
-      phone: firestoreData.phone || "",
-      photoURL: firestoreData.photoURL || "",
-      address: firestoreData.address || "",
-      bio: firestoreData.bio || "",
-      dateOfBirth: firestoreData.dateOfBirth || "",
-      role: firestoreData.role || "user",
-      paymentMethods: firestoreData.paymentMethods || [],
-      consent: firestoreData.consent || {
+      email: localData.email || "",
+      firstName: localData.firstName || "",
+      lastName: localData.lastName || "",
+      country: localData.country || "",
+      dob: localData.dob ? new Date(localData.dob) : new Date(),
+      phone: localData.phone || "",
+      photoURL: localData.photoURL || "",
+      address: localData.address || "",
+      bio: localData.bio || "",
+      dateOfBirth: localData.dateOfBirth || "",
+      role: localData.role || "user",
+      paymentMethods: localData.paymentMethods || [],
+      consent: localData.consent || {
         marketingEmails: false,
         termsOfService: false,
         privacyPolicy: false,
       },
       purchaseHistory: {
-        activeServices: firestoreData.purchaseHistory?.activeServices || [],
+        activeServices: localData.purchaseHistory?.activeServices || [],
         totalServicesOrdered:
-          firestoreData.purchaseHistory?.totalServicesOrdered || 0,
-        totalSpent: firestoreData.purchaseHistory?.totalSpent || 0,
-        totalOrders: firestoreData.purchaseHistory?.totalOrders || 0,
-        boughtProducts: firestoreData.purchaseHistory?.boughtProducts || [],
+          localData.purchaseHistory?.totalServicesOrdered || 0,
+        totalSpent: localData.purchaseHistory?.totalSpent || 0,
+        totalOrders: localData.purchaseHistory?.totalOrders || 0,
+        boughtProducts: localData.purchaseHistory?.boughtProducts || [],
       },
-      createdAt: firestoreData.createdAt?.toDate
-        ? firestoreData.createdAt.toDate()
-        : new Date(firestoreData.createdAt || Date.now()),
+      createdAt: localData.createdAt
+        ? new Date(localData.createdAt)
+        : new Date(),
     };
   };
 
@@ -127,24 +125,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (firebaseUser) {
         try {
-          // Fetch complete user data from Firestore users collection
-          const userDoc = await getDoc(
-            doc(firestore, "users", firebaseUser.uid)
-          );
+          // Fetch complete user data from localStorage
+          const userDataKey = `user_${firebaseUser.uid}`;
+          const localUserData = getLocalStorageItem(userDataKey, null);
 
-          if (userDoc.exists()) {
-            // User document exists in Firestore - use that data
-            const firestoreData = userDoc.data();
-            const userData = convertFirestoreUser(
-              firestoreData,
+          if (localUserData) {
+            // User data exists in localStorage - use that data
+            const userData = convertLocalStorageUser(
+              localUserData,
               firebaseUser.uid
             );
 
-            console.log("User loaded from Firestore:", userData.email);
+            console.log("User loaded from localStorage:", userData.email);
             setUser(userData);
           } else {
-            // User document doesn't exist - create basic user object (fallback for Google sign-ins)
-            console.log("No Firestore document found, using basic user data");
+            // User data doesn't exist - create basic user object (fallback for Google sign-ins)
+            console.log("No localStorage data found, using basic user data");
             const basicUser = createBasicUser(firebaseUser);
             setUser(basicUser);
           }

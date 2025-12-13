@@ -1,8 +1,8 @@
 // lib/firebase.ts
+// Firebase Configuration - Authentication and Storage Only
+// Firestore and Realtime Database have been removed - using localStorage instead
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Debug logging for Firebase configuration
@@ -77,32 +77,6 @@ if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
   console.log("🌐 Using production Firebase Auth");
 }
 
-// Firestore
-export const firestore = getFirestore(app);
-if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
-  try {
-    connectFirestoreEmulator(firestore, "localhost", 8080);
-    console.log("✅ Firestore emulator connected");
-  } catch (error) {
-    console.warn("⚠️ Firestore emulator connection failed:", error);
-  }
-} else {
-  console.log("🌐 Using production Firestore");
-}
-
-// Realtime Database
-export const rtdb = getDatabase(app);
-if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
-  try {
-    connectDatabaseEmulator(rtdb, "localhost", 9000);
-    console.log("✅ Realtime Database emulator connected");
-  } catch (error) {
-    console.warn("⚠️ Realtime Database emulator connection failed:", error);
-  }
-} else {
-  console.log("🌐 Using production Realtime Database");
-}
-
 // Storage
 export const storage = getStorage(app);
 if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
@@ -115,3 +89,5 @@ if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
 } else {
   console.log("🌐 Using production Storage");
 }
+
+export default app;

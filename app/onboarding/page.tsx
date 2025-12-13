@@ -3,7 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
-import { OnboardingData, LogoSetup, SocialMediaSetup, WebsiteSetup } from "@/lib/types/onboarding";
+import {
+  OnboardingData,
+  LogoSetup,
+  SocialMediaSetup,
+  WebsiteSetup,
+} from "@/lib/types/onboarding";
 import Step1Introduction from "@/components/onboarding/Step1Introduction";
 import Step2BusinessName from "@/components/onboarding/Step2BusinessName";
 import Step3LogoSetup from "@/components/onboarding/Step3LogoSetup";
@@ -15,9 +20,11 @@ export default function OnboardingPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>({
-    completedSteps: [],
-  });
+  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>(
+    {
+      completedSteps: [],
+    }
+  );
 
   useEffect(() => {
     // Redirect to sign-in if not authenticated
@@ -50,7 +57,10 @@ export default function OnboardingPage() {
         userId: user.id,
         updatedAt: new Date(),
       };
-      localStorage.setItem(`onboarding_${user.id}`, JSON.stringify(updatedData));
+      localStorage.setItem(
+        `onboarding_${user.id}`,
+        JSON.stringify(updatedData)
+      );
       setOnboardingData(updatedData);
     }
   };
@@ -127,7 +137,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
       {/* Progress Bar */}
       {currentStep > 1 && (
         <div className="max-w-4xl mx-auto mb-8">
@@ -153,7 +163,9 @@ export default function OnboardingPage() {
                     </div>
                     <span
                       className={`text-xs mt-1 font-medium ${
-                        currentStep >= step.number ? "text-gray-900" : "text-gray-400"
+                        currentStep >= step.number
+                          ? "text-gray-900"
+                          : "text-gray-400"
                       }`}
                     >
                       {step.name}
@@ -162,7 +174,9 @@ export default function OnboardingPage() {
                   {index < steps.length - 1 && (
                     <div
                       className={`h-1 flex-1 mx-2 rounded transition-all ${
-                        currentStep > step.number ? "bg-green-500" : "bg-gray-200"
+                        currentStep > step.number
+                          ? "bg-green-500"
+                          : "bg-gray-200"
                       }`}
                     ></div>
                   )}

@@ -29,6 +29,14 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
+                  href="/"
+                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/templates"
                   className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
                 >
@@ -41,22 +49,6 @@ export default function Footer() {
                   className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/#features"
-                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/#pricing"
-                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Pricing
                 </Link>
               </li>
             </ul>
@@ -78,26 +70,10 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/blog"
+                  href="/community"
                   className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/careers"
-                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Contact
+                  Community
                 </Link>
               </li>
             </ul>
@@ -144,26 +120,9 @@ export default function Footer() {
             <p className="text-sm text-gray-600">
               © {currentYear} Business Builder. All rights reserved.
             </p>
-            <div className="flex space-x-6">
-              <Link
-                href="/privacy"
-                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
-                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/cookies"
-                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Cookie Policy
-              </Link>
-            </div>
+            <p className="text-sm text-gray-500">
+              Built with ❤️ for entrepreneurs
+            </p>
           </div>
         </div>
       </div>

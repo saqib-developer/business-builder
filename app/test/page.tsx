@@ -12,8 +12,6 @@ import {
   FiLock,
 } from "react-icons/fi";
 import { getAuth, deleteUser } from "firebase/auth";
-import { firestore } from "@/lib/firebase/firebase";
-import { collection, getDocs, writeBatch, deleteDoc } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 // import initializeDummyData from "@/temp/DummyData"; // Commented out for build
 
@@ -51,84 +49,32 @@ export default function TestPage() {
     return true;
   };
 
-  const deleteAllFirestoreData = async () => {
-    addLog("🗑️ Starting Firestore cleanup...");
+  const deleteAllLocalStorageData = async () => {
+    addLog("🗑️ Starting localStorage cleanup...");
 
-    const collectionsToClean = [
-      "users",
-      "projects",
-      "products",
-      "services",
-      "orders",
-      "chats",
-      "analytics",
-      "settings",
-      "contact_messages",
-      "media",
-      "sliders",
-      "service_orders",
-    ];
+    const keysToClean = ["brandSettings", "onboarding_data"];
 
     try {
-      // Delete subcollections first (chat messages)
-      addLog("🗑️ Cleaning chat message subcollections...");
-      const chatsSnapshot = await getDocs(collection(firestore, "chats"));
+      // Get all localStorage keys that match our patterns
+      const allKeys = Object.keys(localStorage);
+      const userKeys = allKeys.filter(
+        (key) =>
+          key.startsWith("user_") ||
+          key.startsWith("onboarding_") ||
+          keysToClean.includes(key)
+      );
 
-      for (const chatDoc of chatsSnapshot.docs) {
-        const messagesRef = collection(
-          firestore,
-          `chats/${chatDoc.id}/messages`
-        );
-        const messagesSnapshot = await getDocs(messagesRef);
+      addLog(`Found ${userKeys.length} items to clean`);
 
-        if (!messagesSnapshot.empty) {
-          const batch = writeBatch(firestore);
-          messagesSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
-          await batch.commit();
-          addLog(
-            `   ✅ Deleted ${messagesSnapshot.docs.length} messages from chat ${chatDoc.id}`
-          );
-        }
-      }
+      userKeys.forEach((key) => {
+        localStorage.removeItem(key);
+        addLog(`   ✅ Removed: ${key}`);
+      });
 
-      // Delete main collections
-      for (const collectionName of collectionsToClean) {
-        const collectionRef = collection(firestore, collectionName);
-        const snapshot = await getDocs(collectionRef);
-
-        if (snapshot.empty) {
-          addLog(`   ✅ Collection ${collectionName} is already empty`);
-          continue;
-        }
-
-        const batch = writeBatch(firestore);
-        let batchCount = 0;
-
-        for (const docSnapshot of snapshot.docs) {
-          batch.delete(docSnapshot.ref);
-          batchCount++;
-
-          if (batchCount === 500) {
-            await batch.commit();
-            addLog(
-              `   🔄 Committed batch of ${batchCount} deletions for ${collectionName}`
-            );
-            batchCount = 0;
-          }
-        }
-
-        if (batchCount > 0) {
-          await batch.commit();
-          addLog(
-            `   ✅ Deleted ${snapshot.docs.length} documents from ${collectionName}`
-          );
-        }
-      }
-
-      addLog("✅ Firestore cleanup completed successfully!");
+      addLog("✅ LocalStorage cleanup completed successfully!");
       return true;
     } catch (error: any) {
-      addLog(`❌ Error during Firestore cleanup: ${error.message}`);
+      addLog(`❌ Error during localStorage cleanup: ${error.message}`);
       throw error;
     }
   };
@@ -143,9 +89,9 @@ export default function TestPage() {
     setLogs([]);
 
     try {
-      addLog("🚀 Starting complete database deletion...");
+      addLog("🚀 Starting complete data deletion...");
 
-      await deleteAllFirestoreData();
+      await deleteAllLocalStorageData();
       await deleteAllAuthUsers();
 
       addLog("✅ All data deleted successfully!");
@@ -170,16 +116,13 @@ export default function TestPage() {
     setLogs([]);
 
     try {
-      addLog("🚀 Starting complete database reset...");
+      addLog("🚀 Starting complete data reset...");
 
       // Delete all existing data
-      await deleteAllFirestoreData();
+      await deleteAllLocalStorageData();
       await deleteAllAuthUsers();
 
-      addLog("📝 Initializing dummy data...");
-
-      // Initialize dummy data
-      // await initializeDummyData(); // Commented out - restore DummyData.ts to use
+      addLog("📝 Data reset completed");
 
       addLog("✅ Database reset completed successfully!");
       toast.success("Database reset successfully! Refresh the page.");
@@ -200,7 +143,7 @@ export default function TestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 sm:p-8">
+    <div className="min-h-screen bg-gray-900 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -248,13 +191,13 @@ export default function TestPage() {
               <h2 className="text-xl font-bold text-white">Delete All Data</h2>
             </div>
             <p className="text-gray-400 mb-4 text-sm">
-              Permanently delete all Firestore collections and Firebase Auth
-              users. The database will be completely empty.
+              Permanently delete all localStorage data and Firebase Auth users.
+              The database will be completely empty.
             </p>
             <ul className="space-y-2 mb-6 text-sm text-gray-400">
               <li className="flex items-center gap-2">
                 <FiDatabase className="w-4 h-4 text-red-400" />
-                Delete all Firestore data
+                Delete all localStorage data
               </li>
               <li className="flex items-center gap-2">
                 <FiUsers className="w-4 h-4 text-red-400" />
@@ -281,12 +224,12 @@ export default function TestPage() {
                 <FiRefreshCw className="w-6 h-6 text-blue-400" />
               </div>
               <h2 className="text-xl font-bold text-white">
-                Reset with Dummy Data
+                Reset LocalStorage
               </h2>
             </div>
             <p className="text-gray-400 mb-4 text-sm">
-              Delete all existing data and restore fresh dummy data from
-              DummyData.ts file. Perfect for testing and development.
+              Delete all existing localStorage data. This will clear all saved
+              business names, logos, and onboarding progress.
             </p>
             <ul className="space-y-2 mb-6 text-sm text-gray-400">
               <li className="flex items-center gap-2">
@@ -295,11 +238,11 @@ export default function TestPage() {
               </li>
               <li className="flex items-center gap-2">
                 <FiDatabase className="w-4 h-4 text-blue-400" />
-                Initialize dummy data
+                Clear localStorage
               </li>
               <li className="flex items-center gap-2">
                 <FiUsers className="w-4 h-4 text-blue-400" />
-                Create test accounts
+                Reset user progress
               </li>
             </ul>
             <button
@@ -307,7 +250,7 @@ export default function TestPage() {
               disabled={isDeleting || isResetting}
               className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white rounded-xl font-semibold transition-all disabled:cursor-not-allowed"
             >
-              {isResetting ? "Resetting..." : "Reset with Dummy Data"}
+              {isResetting ? "Resetting..." : "Reset LocalStorage"}
             </button>
           </motion.div>
         </div>

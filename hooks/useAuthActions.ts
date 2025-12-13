@@ -9,11 +9,11 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, firestore, storage } from "@/lib/firebase/firebase";
+import { auth, storage } from "@/lib/firebase/firebase";
 import { useRouter } from "next/navigation";
 import { User } from "@/lib/types";
+import { setLocalStorageItem, getLocalStorageItem } from "./useLocalStorage";
 
 export function useAuthActions() {
   const router = useRouter();
@@ -84,12 +84,12 @@ export function useAuthActions() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user document exists in Firestore
-      const userDocRef = doc(firestore, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      // Check if user data exists in localStorage
+      const userDataKey = `user_${user.uid}`;
+      const existingUserData = getLocalStorageItem(userDataKey, null);
 
-      if (!userDoc.exists()) {
-        // Create new user document for Google sign-in users
+      if (!existingUserData) {
+        // Create new user data in localStorage for Google sign-in users
         const userData: any = {
           id: user.uid,
           email: user.email || "",
@@ -97,7 +97,7 @@ export function useAuthActions() {
           lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
           role: "user",
           country: "",
-          dob: new Date(),
+          dob: new Date().toISOString(),
           phone: "",
           photoURL: user.photoURL || "",
           address: "",
@@ -110,7 +110,7 @@ export function useAuthActions() {
             totalOrders: 0,
             boughtProducts: [],
           },
-          createdAt: serverTimestamp(),
+          createdAt: new Date().toISOString(),
           paymentMethods: [],
           consent: {
             marketingEmails: false,
@@ -119,10 +119,10 @@ export function useAuthActions() {
           },
         };
 
-        await setDoc(userDocRef, userData);
-        console.log("New Google user document created in Firestore");
+        setLocalStorageItem(userDataKey, userData);
+        console.log("New Google user data saved to localStorage");
       } else {
-        console.log("Existing Google user found in Firestore");
+        console.log("Existing Google user found in localStorage");
       }
 
       // Check if user has completed onboarding
@@ -138,7 +138,7 @@ export function useAuthActions() {
         }
       } else {
         // New Google user should go through onboarding
-        shouldRedirectToOnboarding = !userDoc.exists();
+        shouldRedirectToOnboarding = !existingUserData;
       }
 
       // Get the stored redirect URL or default based on onboarding status
@@ -204,7 +204,7 @@ export function useAuthActions() {
         }
       }
 
-      // Create comprehensive user document in Firestore
+      // Create comprehensive user data in localStorage
       const userData: any = {
         id: user.uid,
         email: user.email || "",
@@ -213,8 +213,8 @@ export function useAuthActions() {
         role: "user",
         country: additionalData?.country || "",
         dob: additionalData?.dateOfBirth
-          ? new Date(additionalData.dateOfBirth)
-          : new Date(),
+          ? new Date(additionalData.dateOfBirth).toISOString()
+          : new Date().toISOString(),
         phone: additionalData?.phone || "",
         photoURL: photoURL,
         address: additionalData?.address || "",
@@ -227,7 +227,7 @@ export function useAuthActions() {
           totalOrders: 0,
           boughtProducts: [],
         },
-        createdAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
         paymentMethods: [],
         consent: {
           marketingEmails: false,
@@ -236,8 +236,8 @@ export function useAuthActions() {
         },
       };
 
-      await setDoc(doc(firestore, "users", user.uid), userData);
-      console.log("New email user document created in Firestore");
+      setLocalStorageItem(`user_${user.uid}`, userData);
+      console.log("New email user data saved to localStorage");
 
       // New users always go to onboarding
       sessionStorage.removeItem("redirectUrl");
@@ -259,12 +259,12 @@ export function useAuthActions() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user document already exists
-      const userDocRef = doc(firestore, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      // Check if user data already exists in localStorage
+      const userDataKey = `user_${user.uid}`;
+      const existingUserData = getLocalStorageItem(userDataKey, null);
 
-      if (!userDoc.exists()) {
-        // Create user document for new Google users
+      if (!existingUserData) {
+        // Create user data for new Google users in localStorage
         const userData: any = {
           id: user.uid,
           email: user.email || "",
@@ -272,7 +272,7 @@ export function useAuthActions() {
           lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
           role: "user",
           country: "",
-          dob: new Date(),
+          dob: new Date().toISOString(),
           phone: "",
           photoURL: user.photoURL || "",
           address: "",
@@ -285,7 +285,7 @@ export function useAuthActions() {
             totalOrders: 0,
             boughtProducts: [],
           },
-          createdAt: serverTimestamp(),
+          createdAt: new Date().toISOString(),
           paymentMethods: [],
           consent: {
             marketingEmails: false,
@@ -294,8 +294,8 @@ export function useAuthActions() {
           },
         };
 
-        await setDoc(userDocRef, userData);
-        console.log("New Google signup user document created in Firestore");
+        setLocalStorageItem(userDataKey, userData);
+        console.log("New Google signup user data saved to localStorage");
 
         // New Google users go to onboarding
         sessionStorage.removeItem("redirectUrl");

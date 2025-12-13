@@ -125,7 +125,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -137,7 +137,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Business Overview Card */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-8 mb-8 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-8 mb-8 text-white shadow-2xl hover:shadow-premium-lg transition-all duration-300">
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-3xl font-bold mb-2">
@@ -327,7 +327,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <Link
                 href="/templates"
-                className="block p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-all group"
+                className="block p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
@@ -344,9 +344,9 @@ export default function DashboardPage() {
                 </div>
               </Link>
 
-              <div className="block p-4 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
+              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
                     <FiGlobe className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
@@ -354,16 +354,18 @@ export default function DashboardPage() {
                       Domain & Hosting
                     </h4>
                     <p className="text-sm text-gray-600">
-                      Coming Soon (FYP Phase 2)
+                      Available in Premium Plan
                     </p>
                   </div>
-                  <FiClock className="w-5 h-5 text-gray-400" />
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    Soon
+                  </span>
                 </div>
               </div>
 
-              <div className="block p-4 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
+              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
                     <FiPackage className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
@@ -371,16 +373,18 @@ export default function DashboardPage() {
                       Add Products
                     </h4>
                     <p className="text-sm text-gray-600">
-                      Coming Soon (FYP Phase 2)
+                      Launch your product catalog
                     </p>
                   </div>
-                  <FiClock className="w-5 h-5 text-gray-400" />
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    Soon
+                  </span>
                 </div>
               </div>
 
-              <div className="block p-4 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
+              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
                     <FiShoppingBag className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
@@ -388,10 +392,12 @@ export default function DashboardPage() {
                       Launch Store
                     </h4>
                     <p className="text-sm text-gray-600">
-                      Coming Soon (FYP Phase 2)
+                      Go live with your business
                     </p>
                   </div>
-                  <FiClock className="w-5 h-5 text-gray-400" />
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    Soon
+                  </span>
                 </div>
               </div>
             </div>
