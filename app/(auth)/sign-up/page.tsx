@@ -149,7 +149,7 @@ function SignUpForm() {
 
           {/* Sign Up Form */}
           <form onSubmit={handleSignUp} className="space-y-6">
-            {/* Name Field */}
+            {/* Name Field  */}
             <div>
               <label
                 htmlFor="name"
