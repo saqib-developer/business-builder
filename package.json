@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "emulators": "firebase emulators:start"
   },
   "dependencies": {
+    "convex": "^1.32.0",
     "firebase": "^12.5.0",
     "framer-motion": "^12.23.24",
     "next": "^16.0.10",

@@ -18,6 +18,8 @@ import {
   FiShare2,
   FiAward,
   FiClock,
+  FiMessageCircle,
+  FiArrowRight,
 } from "react-icons/fi";
 import { OnboardingData } from "@/lib/types/onboarding";
 
@@ -136,6 +138,99 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Custom Logo Design Notification */}
+        {localOnboardingData.logo?.type === "custom" && (
+          <div className="mb-6 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl p-6 shadow-xl text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <FiMessageCircle className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-2">
+                    🎨 Custom Logo Design Request Active
+                  </h3>
+                  <p className="text-pink-50 mb-4">
+                    Our design team is ready to create your perfect logo! Chat
+                    with us to discuss your vision, share ideas, and get your
+                    custom logo designed.
+                  </p>
+                  <Link
+                    href="/dashboard/chat?type=logo"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-pink-600 rounded-xl font-semibold hover:bg-pink-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                  >
+                    <FiMessageCircle className="w-5 h-5" />
+                    Chat with Design Team
+                    <FiArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* WordPress Website Setup Notification */}
+        {localOnboardingData.website?.type === "wordpress" && (
+          <div className="mb-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-2xl p-6 shadow-xl text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <FiGlobe className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-2">
+                    🌐 WordPress Website Setup Active
+                  </h3>
+                  <p className="text-blue-50 mb-4">
+                    Our team will help you set up your WordPress website! Chat
+                    with us to discuss hosting, themes, plugins, and get your
+                    site up and running.
+                  </p>
+                  <Link
+                    href="/dashboard/chat?type=wordpress"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                  >
+                    <FiMessageCircle className="w-5 h-5" />
+                    Chat with Web Team
+                    <FiArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Code Website Notification */}
+        {localOnboardingData.website?.type === "custom" && (
+          <div className="mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-xl text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <FiGlobe className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-2">
+                    💻 Custom Website Development Active
+                  </h3>
+                  <p className="text-indigo-50 mb-4">
+                    Our developers are ready to build your custom website! Chat
+                    with us to discuss features, functionality, design, and
+                    bring your vision to life.
+                  </p>
+                  <Link
+                    href="/dashboard/chat?type=custom-code"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                  >
+                    <FiMessageCircle className="w-5 h-5" />
+                    Chat with Dev Team
+                    <FiArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Business Overview Card */}
         <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-8 mb-8 text-white shadow-2xl hover:shadow-premium-lg transition-all duration-300">
           <div className="flex items-start justify-between mb-6">
@@ -186,7 +281,7 @@ export default function DashboardPage() {
                 {localOnboardingData.socialMedia
                   ? `${
                       Object.values(localOnboardingData.socialMedia).filter(
-                        (p) => p.clicked
+                        (p) => p.clicked,
                       ).length
                     }/4 platforms`
                   : "0/4 platforms"}
@@ -240,42 +335,66 @@ export default function DashboardPage() {
               </button>
 
               {/* Logo */}
-              <button
-                onClick={() => router.push("/onboarding?step=3")}
-                className={`w-full flex items-start justify-between p-4 rounded-lg border transition-all text-left group ${
-                  localOnboardingData.logo?.type
-                    ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
-                    : "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300"
-                }`}
-              >
-                <div className="flex items-start gap-3 flex-1">
-                  {localOnboardingData.logo?.type ? (
-                    <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                  ) : (
-                    <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Logo</h4>
-                    <p className="text-sm text-gray-600">
-                      {localOnboardingData.logo?.type
-                        ? `${localOnboardingData.logo.type} logo`
-                        : "Add a logo to strengthen your brand"}
-                    </p>
+              {localOnboardingData.logo?.type === "custom" ? (
+                <div className="w-full p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border-2 border-pink-300">
+                  <div className="flex items-start gap-3 mb-3">
+                    <FiMessageCircle className="w-5 h-5 text-pink-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">
+                        Custom Logo Design
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Your custom design request is active. Chat with our
+                        design team to discuss your logo!
+                      </p>
+                      <Link
+                        href="/dashboard/chat?type=logo"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+                      >
+                        <FiMessageCircle className="w-4 h-4" />
+                        Open Chat
+                      </Link>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {localOnboardingData.logo?.url && (
-                    <img
-                      src={localOnboardingData.logo.url}
-                      alt="Logo"
-                      className="w-12 h-12 object-contain rounded"
-                    />
-                  )}
-                  <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
-                    {localOnboardingData.logo?.type ? "Edit" : "Add"}
-                  </span>
-                </div>
-              </button>
+              ) : (
+                <button
+                  onClick={() => router.push("/onboarding?step=3")}
+                  className={`w-full flex items-start justify-between p-4 rounded-lg border transition-all text-left group ${
+                    localOnboardingData.logo?.type
+                      ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
+                      : "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300"
+                  }`}
+                >
+                  <div className="flex items-start gap-3 flex-1">
+                    {localOnboardingData.logo?.type ? (
+                      <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                    ) : (
+                      <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">Logo</h4>
+                      <p className="text-sm text-gray-600">
+                        {localOnboardingData.logo?.type
+                          ? `${localOnboardingData.logo.type} logo`
+                          : "Add a logo to strengthen your brand"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {localOnboardingData.logo?.url && (
+                      <img
+                        src={localOnboardingData.logo.url}
+                        alt="Logo"
+                        className="w-12 h-12 object-contain rounded"
+                      />
+                    )}
+                    <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
+                      {localOnboardingData.logo?.type ? "Edit" : "Add"}
+                    </span>
+                  </div>
+                </button>
+              )}
 
               {/* Social Media */}
               <button
@@ -292,7 +411,7 @@ export default function DashboardPage() {
                       {localOnboardingData.socialMedia
                         ? `${
                             Object.values(
-                              localOnboardingData.socialMedia
+                              localOnboardingData.socialMedia,
                             ).filter((p) => p.clicked).length
                           } platforms secured`
                         : "No platforms set up yet"}
@@ -302,7 +421,7 @@ export default function DashboardPage() {
                 <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
                   {localOnboardingData.socialMedia &&
                   Object.values(localOnboardingData.socialMedia).filter(
-                    (p) => p.clicked
+                    (p) => p.clicked,
                   ).length > 0
                     ? "Edit"
                     : "Setup"}

@@ -1,6 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/context/AuthContext";
+import { useRouter } from "next/navigation";
+import {
+  createCommunityPost,
+  subscribeToCommunityPosts,
+  createReply,
+  togglePostLike,
+  CommunityPost,
+} from "@/lib/firebase/firestoreService";
 import {
   FiMessageCircle,
   FiThumbsUp,
@@ -8,107 +17,165 @@ import {
   FiPlus,
   FiX,
   FiSend,
+  FiLogIn,
 } from "react-icons/fi";
 
-interface Post {
-  id: number;
-  author: {
-    name: string;
-    avatar: string;
-    role: string;
-  };
-  timestamp: string;
-  title: string;
-  body: string;
-  likes: number;
-  replies: number;
-  category: string;
-}
-
-const MOCK_POSTS: Post[] = [
-  {
-    id: 1,
-    author: {
-      name: "Sarah Johnson",
-      avatar: "SJ",
-      role: "Restaurant Owner",
-    },
-    timestamp: "2 hours ago",
-    title: "Has anyone verified their WhatsApp Business account yet?",
-    body: "I'm trying to set up WhatsApp Business for my restaurant but the verification process seems complicated. Has anyone successfully done this? What documents did you need?",
-    likes: 12,
-    replies: 8,
-    category: "Social Media",
-  },
-  {
-    id: 2,
-    author: {
-      name: "Mike Chen",
-      avatar: "MC",
-      role: "Food Delivery Startup",
-    },
-    timestamp: "5 hours ago",
-    title: "What colors look best for a food delivery brand?",
-    body: "I'm designing my logo and choosing brand colors for my food delivery service. I'm torn between orange/red (like other delivery apps) or going with something unique like purple. What do you all think? Does color psychology really matter that much?",
-    likes: 24,
-    replies: 15,
-    category: "Branding",
-  },
-  {
-    id: 3,
-    author: {
-      name: "Aisha Khan",
-      avatar: "AK",
-      role: "E-commerce Store",
-    },
-    timestamp: "1 day ago",
-    title: "Best practices for product photography on a budget?",
-    body: "I can't afford a professional photographer right now. What are some tips for taking good product photos with just a smartphone? I've heard about lightboxes but don't know where to start. Any recommendations?",
-    likes: 31,
-    replies: 22,
-    category: "Marketing",
-  },
-  {
-    id: 4,
-    author: {
-      name: "David Wilson",
-      avatar: "DW",
-      role: "Fitness Coach",
-    },
-    timestamp: "2 days ago",
-    title: "Should I use the Modern Shop or Minimal Boutique template?",
-    body: "I'm a fitness coach launching an online program. I love the clean look of Minimal Boutique but Modern Shop seems more dynamic. Which template would work better for a fitness/wellness brand? I want something that feels energetic but professional.",
-    likes: 18,
-    replies: 11,
-    category: "Website Design",
-  },
-];
-
 export default function CommunityPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostBody, setNewPostBody] = useState("");
+  const [newPostCategory, setNewPostCategory] = useState("Social Media");
   const [replyText, setReplyText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Topics");
+  const [posting, setPosting] = useState(false);
 
-  const handlePostQuestion = () => {
+  // Subscribe to community posts
+  useEffect(() => {
+    const unsubscribe = subscribeToCommunityPosts((fetchedPosts) => {
+      setPosts(fetchedPosts);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return "Just now";
+
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60)
+      return `${diffInMinutes} minute${diffInMinutes > 1 ? "s" : ""} ago`;
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+    if (diffInDays < 7)
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+
+    return date.toLocaleDateString();
+  };
+
+  const handlePostQuestion = async () => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+
     if (newPostTitle.trim() && newPostBody.trim()) {
-      alert("Question posted! (This is a demo - no backend connected)");
-      setShowPostModal(false);
-      setNewPostTitle("");
-      setNewPostBody("");
+      setPosting(true);
+      try {
+        await createCommunityPost({
+          authorId: user.id,
+          authorName: `${user.firstName} ${user.lastName}`,
+          authorAvatar: getInitials(`${user.firstName} ${user.lastName}`),
+          authorRole: user.role === "admin" ? "Admin" : "Entrepreneur",
+          title: newPostTitle,
+          body: newPostBody,
+          category: newPostCategory,
+        });
+
+        setShowPostModal(false);
+        setNewPostTitle("");
+        setNewPostBody("");
+        setNewPostCategory("Social Media");
+      } catch (error) {
+        console.error("Error posting question:", error);
+        alert("Failed to post question. Please try again.");
+      } finally {
+        setPosting(false);
+      }
     }
   };
 
-  const handleReply = () => {
-    if (replyText.trim()) {
-      alert("Reply posted! (This is a demo - no backend connected)");
-      setShowReplyModal(false);
-      setReplyText("");
-      setSelectedPost(null);
+  const handleReply = async () => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+
+    if (replyText.trim() && selectedPost) {
+      setPosting(true);
+      try {
+        await createReply({
+          postId: selectedPost.id,
+          authorId: user.id,
+          authorName: `${user.firstName} ${user.lastName}`,
+          authorAvatar: getInitials(`${user.firstName} ${user.lastName}`),
+          body: replyText,
+        });
+
+        setShowReplyModal(false);
+        setReplyText("");
+        setSelectedPost(null);
+      } catch (error) {
+        console.error("Error posting reply:", error);
+        alert("Failed to post reply. Please try again.");
+      } finally {
+        setPosting(false);
+      }
     }
   };
+
+  const handleLike = async (postId: string) => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+
+    try {
+      await togglePostLike(postId, user.id);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
+
+  const handleOpenPostModal = () => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+    setShowPostModal(true);
+  };
+
+  const handleOpenReplyModal = (post: CommunityPost) => {
+    if (!user) {
+      router.push("/sign-in");
+      return;
+    }
+    setSelectedPost(post);
+    setShowReplyModal(true);
+  };
+
+  const filteredPosts =
+    selectedCategory === "All Topics"
+      ? posts
+      : posts.filter((post) => post.category === selectedCategory);
+
+  const categories = [
+    "All Topics",
+    "Social Media",
+    "Branding",
+    "Marketing",
+    "Website Design",
+    "Other",
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -125,7 +192,7 @@ export default function CommunityPage() {
               </p>
             </div>
             <button
-              onClick={() => setShowPostModal(true)}
+              onClick={handleOpenPostModal}
               className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg"
             >
               <FiPlus className="w-5 h-5" />
@@ -137,101 +204,141 @@ export default function CommunityPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Auth Warning Banner */}
+        {!user && !loading && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+            <FiLogIn className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-blue-900">
+                <strong>Sign in to participate!</strong> You need to be logged
+                in to post questions and replies.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/sign-in")}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all text-sm"
+            >
+              Sign In
+            </button>
+          </div>
+        )}
+
         {/* Category Filters */}
         <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm whitespace-nowrap">
-            All Topics
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm border border-gray-200 hover:bg-gray-50 whitespace-nowrap">
-            Social Media
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm border border-gray-200 hover:bg-gray-50 whitespace-nowrap">
-            Branding
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm border border-gray-200 hover:bg-gray-50 whitespace-nowrap">
-            Marketing
-          </button>
-          <button className="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium text-sm border border-gray-200 hover:bg-gray-50 whitespace-nowrap">
-            Website Design
-          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                selectedCategory === category
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
         {/* Posts Feed */}
         <div className="space-y-4">
-          {MOCK_POSTS.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all"
-            >
-              {/* Author Info */}
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                  {post.author.avatar}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-gray-900">
-                      {post.author.name}
-                    </h3>
-                    <span className="text-sm text-gray-500">•</span>
-                    <span className="text-sm text-gray-500">
-                      {post.author.role}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <FiClock className="w-3 h-3" />
-                    <span>{post.timestamp}</span>
-                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                      {post.category}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Post Content */}
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                {post.title}
-              </h2>
-              <p className="text-gray-700 mb-4 leading-relaxed">{post.body}</p>
-
-              {/* Actions */}
-              <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
-                  <FiThumbsUp className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {post.likes} Likes
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedPost(post);
-                    setShowReplyModal(true);
-                  }}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  <FiMessageCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {post.replies} Replies
-                  </span>
-                </button>
-              </div>
+          {filteredPosts.length === 0 ? (
+            <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
+              <FiMessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-600 text-lg font-medium mb-2">
+                No posts yet in this category
+              </p>
+              <p className="text-gray-500 text-sm">
+                Be the first to start a conversation!
+              </p>
             </div>
-          ))}
+          ) : (
+            filteredPosts.map((post) => (
+              <div
+                key={post.id}
+                className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all"
+              >
+                {/* Author Info */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {post.authorAvatar}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-gray-900">
+                        {post.authorName}
+                      </h3>
+                      <span className="text-sm text-gray-500">•</span>
+                      <span className="text-sm text-gray-500">
+                        {post.authorRole}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <FiClock className="w-3 h-3" />
+                      <span>{formatTimestamp(post.createdAt)}</span>
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                        {post.category}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Post Content */}
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {post.title}
+                </h2>
+                <p className="text-gray-700 mb-4 leading-relaxed">
+                  {post.body}
+                </p>
+
+                {/* Actions */}
+                <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => handleLike(post.id)}
+                    disabled={!user}
+                    className={`flex items-center gap-2 transition-colors ${
+                      user && post.likedBy?.includes(user.id)
+                        ? "text-blue-600"
+                        : "text-gray-600 hover:text-blue-600"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <FiThumbsUp className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {post.likes} {post.likes === 1 ? "Like" : "Likes"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenReplyModal(post)}
+                    disabled={!user}
+                    className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiMessageCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {post.replyCount}{" "}
+                      {post.replyCount === 1 ? "Reply" : "Replies"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Empty State Placeholder */}
-        <div className="mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 text-center border-2 border-blue-200">
-          <p className="text-gray-700 mb-4">
-            🚀 <strong>Join the conversation!</strong> Share your
-            entrepreneurial journey, ask questions, and help others succeed.
-          </p>
-          <button
-            onClick={() => setShowPostModal(true)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
-          >
-            Post Your First Question
-          </button>
-        </div>
+        {/* Call to Action */}
+        {posts.length === 0 && (
+          <div className="mt-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8 text-center border-2 border-blue-200">
+            <p className="text-gray-700 mb-4">
+              🚀 <strong>Join the conversation!</strong> Share your
+              entrepreneurial journey, ask questions, and help others succeed.
+            </p>
+            <button
+              onClick={handleOpenPostModal}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
+            >
+              Post Your First Question
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Post Question Modal */}
@@ -281,7 +388,11 @@ export default function CommunityPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Category
                 </label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={newPostCategory}
+                  onChange={(e) => setNewPostCategory(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option>Social Media</option>
                   <option>Branding</option>
                   <option>Marketing</option>
@@ -293,16 +404,19 @@ export default function CommunityPage() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={() => setShowPostModal(false)}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                  disabled={posting}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handlePostQuestion}
-                  disabled={!newPostTitle.trim() || !newPostBody.trim()}
+                  disabled={
+                    !newPostTitle.trim() || !newPostBody.trim() || posting
+                  }
                   className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
                 >
-                  Post Question
+                  {posting ? "Posting..." : "Post Question"}
                 </button>
               </div>
             </div>
@@ -357,17 +471,18 @@ export default function CommunityPage() {
                     setShowReplyModal(false);
                     setSelectedPost(null);
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+                  disabled={posting}
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReply}
-                  disabled={!replyText.trim()}
+                  disabled={!replyText.trim() || posting}
                   className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
                   <FiSend className="w-4 h-4" />
-                  Post Reply
+                  {posting ? "Posting..." : "Post Reply"}
                 </button>
               </div>
             </div>

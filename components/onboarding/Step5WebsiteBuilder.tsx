@@ -24,7 +24,7 @@ export default function Step5WebsiteBuilder({
     "template" | "wordpress" | "custom" | null
   >(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
-    null
+    null,
   );
 
   const handleContinue = () => {
@@ -94,10 +94,14 @@ export default function Step5WebsiteBuilder({
         </div>
 
         {/* Option B: WordPress */}
-        <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 opacity-60 cursor-not-allowed relative">
-          <div className="absolute -top-3 right-4 bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">
-            Paid Feature
-          </div>
+        <div
+          onClick={() => setSelectedOption("wordpress")}
+          className={`bg-white rounded-2xl p-6 border-2 cursor-pointer transition-all ${
+            selectedOption === "wordpress"
+              ? "border-purple-500 shadow-xl scale-105"
+              : "border-gray-200 hover:border-purple-300 hover:shadow-lg"
+          }`}
+        >
           <div className="text-center mb-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white mb-4">
               <SiWordpress className="w-8 h-8" />
@@ -106,18 +110,22 @@ export default function Step5WebsiteBuilder({
             <p className="text-gray-600 text-sm">
               Full WordPress website with premium themes
             </p>
-            <div className="mt-3 inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-              <FiLock className="w-4 h-4" />
-              Coming Soon
+            <div className="mt-3 inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
+              <FiCheckCircle className="w-4 h-4" />
+              Chat with Team
             </div>
           </div>
         </div>
 
         {/* Option C: Custom Code */}
-        <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 opacity-60 cursor-not-allowed relative">
-          <div className="absolute -top-3 right-4 bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold">
-            Contact Us
-          </div>
+        <div
+          onClick={() => setSelectedOption("custom")}
+          className={`bg-white rounded-2xl p-6 border-2 cursor-pointer transition-all ${
+            selectedOption === "custom"
+              ? "border-pink-500 shadow-xl scale-105"
+              : "border-gray-200 hover:border-pink-300 hover:shadow-lg"
+          }`}
+        >
           <div className="text-center mb-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl text-white mb-4">
               <FaCode className="w-8 h-8" />
@@ -128,9 +136,9 @@ export default function Step5WebsiteBuilder({
             <p className="text-gray-600 text-sm">
               Fully custom website built to your specs
             </p>
-            <div className="mt-3 inline-flex items-center gap-2 bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">
-              <FiLock className="w-4 h-4" />
-              Coming Soon
+            <div className="mt-3 inline-flex items-center gap-2 bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-xs font-bold">
+              <FiCheckCircle className="w-4 h-4" />
+              Chat with Dev Team
             </div>
           </div>
         </div>
@@ -247,7 +255,7 @@ export default function Step5WebsiteBuilder({
                         window.open(
                           `/templates/preview/${template.id}`,
                           "_blank",
-                          "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no"
+                          "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no",
                         );
                       }}
                       className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
@@ -283,39 +291,88 @@ export default function Step5WebsiteBuilder({
         </div>
       )}
 
-      {/* WordPress Placeholder */}
+      {/* WordPress Confirmation */}
       {selectedOption === "wordpress" && (
-        <div className="bg-purple-50 rounded-2xl p-8 border-2 border-purple-200 mb-8 text-center">
-          <SiWordpress className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            WordPress Sites - Coming Soon! 🚀
-          </h3>
-          <p className="text-gray-600 mb-4">
-            We're working on integrating premium WordPress themes. This will be
-            a paid feature.
-          </p>
-          <p className="text-sm text-gray-500">
-            For now, try our free templates - they're pretty awesome! 😎
-          </p>
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 border-2 border-purple-200 mb-8">
+          <div className="flex items-start gap-6">
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
+                <SiWordpress className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                WordPress Website Setup 🌐
+              </h3>
+              <p className="text-gray-700 mb-4 leading-relaxed">
+                Perfect choice! Our team will help you set up a professional
+                WordPress website with premium themes, essential plugins, and
+                hosting recommendations.
+              </p>
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <p className="text-sm text-gray-700 mb-2">
+                  <span className="font-semibold text-purple-700">
+                    ✨ What's included:
+                  </span>
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                  <li>• Premium WordPress theme selection</li>
+                  <li>• Essential plugins setup</li>
+                  <li>• Hosting and domain guidance</li>
+                  <li>• Direct chat support with our web team</li>
+                </ul>
+              </div>
+              <div className="mt-4 bg-purple-100 rounded-lg p-3 border border-purple-200">
+                <p className="text-sm text-purple-900">
+                  📬 <strong>Next step:</strong> Once on your dashboard, you can
+                  chat directly with our web team to discuss your WordPress
+                  website requirements.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Custom Code Placeholder */}
+      {/* Custom Code Confirmation */}
       {selectedOption === "custom" && (
-        <div className="bg-pink-50 rounded-2xl p-8 border-2 border-pink-200 mb-8 text-center">
-          <FaCode className="w-16 h-16 text-pink-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            Custom Development 💻
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Need a fully custom website? Our development team can help!
-          </p>
-          <a
-            href="mailto:contact@businessbuilder.com?subject=Custom Website Development Request"
-            className="inline-flex items-center gap-2 bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-all"
-          >
-            Contact Development Team
-          </a>
+        <div className="bg-gradient-to-br from-pink-50 to-indigo-50 rounded-2xl p-8 border-2 border-pink-200 mb-8">
+          <div className="flex items-start gap-6">
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-white">
+                <FaCode className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Custom Website Development 💻
+              </h3>
+              <p className="text-gray-700 mb-4 leading-relaxed">
+                Excellent choice! Our development team will build a fully custom
+                website tailored to your exact requirements and business needs.
+              </p>
+              <div className="bg-white rounded-lg p-4 border border-pink-200">
+                <p className="text-sm text-gray-700 mb-2">
+                  <span className="font-semibold text-pink-700">
+                    ✨ What's included:
+                  </span>
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                  <li>• Custom design tailored to your brand</li>
+                  <li>• Full-stack development (frontend & backend)</li>
+                  <li>• Database setup and integrations</li>
+                  <li>• Direct chat support with our dev team</li>
+                </ul>
+              </div>
+              <div className="mt-4 bg-pink-100 rounded-lg p-3 border border-pink-200">
+                <p className="text-sm text-pink-900">
+                  📬 <strong>Next step:</strong> Once on your dashboard, you can
+                  chat directly with our development team to discuss features,
+                  functionality, and bring your vision to life.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

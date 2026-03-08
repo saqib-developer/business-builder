@@ -88,7 +88,8 @@ textarea {
   background-color: #FFFFFF !important; /* White background */
   border: 1px solid #D1D5DB !important; /* Gray-300 - Visible border */
   border-radius: 0.5rem; /* Rounded-lg */
-  padding: 0.75rem 1rem; /* Comfortable padding */
+  padding-top: 0.75rem; /* Vertical padding only - horizontal controlled by Tailwind */
+  padding-bottom: 0.75rem;
   font-size: 0.9375rem; /* 15px - Optimal readability */
   line-height: 1.5;
 }

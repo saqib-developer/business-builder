@@ -17,6 +17,8 @@ export interface LogoSetup {
   url?: string;
   fileName?: string;
   aiPrompt?: string;
+  convexStorageId?: string;
+  customDesignRequestId?: string;
 }
 
 export interface SocialMediaSetup {

@@ -1,0 +1,213 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // TEMPORARY: All authenticated users are treated as admin for testing
+      return isSignedIn();
+      // PRODUCTION: Uncomment below and comment above line
+      // return isSignedIn() && 
+      //        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      //        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for displaying names, etc.)
+      allow read: if isSignedIn();
+      
+      // Users can create their own profile during signup
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // Users can update their own profile, admins can update any profile
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // Business/Brand collection
+    match /brands/{brandId} {
+      // Read: owner or admin
+      allow read: if isSignedIn() && 
+                     (resource.data.ownerId == request.auth.uid || isAdmin());
+      
+      // Create: any authenticated user
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: owner or admin
+      allow update: if isSignedIn() && 
+                       (resource.data.ownerId == request.auth.uid || isAdmin());
+      
+      // Delete: owner or admin
+      allow delete: if isSignedIn() && 
+                       (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+    
+    // Templates collection
+    match /templates/{templateId} {
+      // Everyone can read templates (they're public)
+      allow read: if true;
+      
+      // Only admins can create, update, or delete templates
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Messages collection (for admin messages/contact forms)
+    match /messages/{messageId} {
+      // Users can read their own messages, admins can read all
+      allow read: if isSignedIn() && 
+                     (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Authenticated users can create messages
+      allow create: if isSignedIn();
+      
+      // Only admins can update or delete messages
+      allow update, delete: if isAdmin();
+    }
+    
+    // User Logos collection (document ID is userId)
+    match /userLogos/{userId} {
+      // Users can read their own logo, admins can read all
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      // Users can create/update their own logo
+      allow create, update: if isSignedIn() && isOwner(userId);
+      
+      // Users can delete their own logo, admins can delete any
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+    
+    // AI Generation Limits collection (document ID is userId)
+    match /aiGenerationLimits/{userId} {
+      // Users can read their own limits, admins can read all
+      allow read: if isSignedIn() && (isOwner(userId) || isAdmin());
+      
+      // Users can create/update their own limits
+      allow create, update: if isSignedIn() && isOwner(userId);
+      
+      // Only admins can delete limits
+      allow delete: if isAdmin();
+    }
+    
+    // Custom Design Requests collection
+    match /customDesignRequests/{requestId} {
+      // Users can read their own requests, admins can read all
+      allow read: if isSignedIn() && 
+                     (isAdmin() || (resource.data.userId != null && resource.data.userId == request.auth.uid));
+      
+      // Admins can list all custom design requests
+      allow list: if isAdmin();
+      
+      // Users can create their own requests
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own requests, admins can update any
+      allow update: if isSignedIn() && 
+                       (isAdmin() || resource.data.userId == request.auth.uid);
+      
+      // Users can delete their own requests, admins can delete any
+      allow delete: if isSignedIn() && 
+                       (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+    
+    // Conversations collection
+    match /conversations/{conversationId} {
+      // Users can read their own conversations, admins can read all
+      allow read: if isSignedIn() && 
+                     (isAdmin() || (resource.data.userId != null && resource.data.userId == request.auth.uid));
+      
+      // Admins can list all conversations
+      allow list: if isAdmin();
+      
+      // Users can create their own conversations
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Users and admins can update conversations
+      allow update: if isSignedIn() && 
+                       (isAdmin() || resource.data.userId == request.auth.uid);
+      
+      // Only admins can delete conversations
+      allow delete: if isAdmin();
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Users can read messages in their conversations, admins can read all
+        allow read: if isSignedIn() && 
+                       (isAdmin() || 
+                        (exists(/databases/$(database)/documents/conversations/$(conversationId)) && 
+                         get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid));
+        
+        // Users and admins can create messages in accessible conversations
+        allow create: if isSignedIn() && 
+                         (isAdmin() || 
+                          (exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+                           get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid));
+        
+        // Users and admins can update messages (for marking as read)
+        allow update: if isSignedIn() && 
+                         (isAdmin() || 
+                          (exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+                           get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid));
+        
+        // Only admins can delete messages
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Community Posts collection
+    match /communityPosts/{postId} {
+      // Anyone (signed in) can read posts
+      allow read: if isSignedIn();
+      
+      // Authenticated users can list posts
+      allow list: if isSignedIn();
+      
+      // Authenticated users can create posts
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      
+      // Post authors and admins can update posts
+      allow update: if isSignedIn() && 
+                       (isAdmin() || resource.data.authorId == request.auth.uid);
+      
+      // Post authors and admins can delete posts
+      allow delete: if isSignedIn() && 
+                       (isAdmin() || resource.data.authorId == request.auth.uid);
+      
+      // Replies subcollection
+      match /replies/{replyId} {
+        // Anyone (signed in) can read replies
+        allow read: if isSignedIn();
+        
+        // Authenticated users can list replies
+        allow list: if isSignedIn();
+        
+        // Authenticated users can create replies
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+        
+        // Reply authors and admins can update replies
+        allow update: if isSignedIn() && 
+                         (isAdmin() || resource.data.authorId == request.auth.uid);
+        
+        // Reply authors and admins can delete replies
+        allow delete: if isSignedIn() && 
+                         (isAdmin() || resource.data.authorId == request.auth.uid);
+      }
+    }
+    
+    // Default: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

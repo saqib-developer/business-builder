@@ -1,9 +1,8 @@
 // lib/firebase.ts
-// Firebase Configuration - Authentication and Storage Only
-// Firestore and Realtime Database have been removed - using localStorage instead
+// Firebase Configuration - Authentication and Firestore
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 // Debug logging for Firebase configuration
 console.log("🔥 Firebase Configuration Debug:");
@@ -11,26 +10,21 @@ console.log("Environment:", process.env.NODE_ENV);
 console.log("API Key exists:", !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 console.log(
   "Auth Domain exists:",
-  !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
 );
 console.log("Project ID:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
 console.log(
   "Storage Bucket exists:",
-  !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
 );
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-api-key",
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-    "demo-project.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket:
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    "demo-project.appspot.com",
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abc123",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
@@ -40,10 +34,10 @@ if (
   !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 ) {
   console.warn(
-    "⚠️ Firebase configuration is incomplete! Using demo values for build."
+    "⚠️ Firebase configuration is incomplete! Using demo values for build.",
   );
   console.warn(
-    "⚠️ Please set up .env.local with your Firebase credentials for development."
+    "⚠️ Please set up .env.local with your Firebase credentials for development.",
   );
 }
 
@@ -77,17 +71,17 @@ if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
   console.log("🌐 Using production Firebase Auth");
 }
 
-// Storage
-export const storage = getStorage(app);
+// Firestore
+export const firestore = getFirestore(app);
 if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
   try {
-    connectStorageEmulator(storage, "localhost", 9199);
-    console.log("✅ Storage emulator connected");
+    connectFirestoreEmulator(firestore, "localhost", 8080);
+    console.log("✅ Firestore emulator connected");
   } catch (error) {
-    console.warn("⚠️ Storage emulator connection failed:", error);
+    console.warn("⚠️ Firestore emulator connection failed:", error);
   }
 } else {
-  console.log("🌐 Using production Storage");
+  console.log("🌐 Using production Firestore");
 }
 
 export default app;

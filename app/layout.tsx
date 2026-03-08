@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/context/AuthContext";
 import { BrandProvider } from "@/lib/context/BrandContext";
+import { ConvexClientProvider } from "@/lib/context/ConvexClientProvider";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -35,15 +36,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <BrandProvider>
-            <Header />
-            {children}
-            <Footer />
-            <FloatingChatWidget />
-            <Toaster position="top-right" />
-          </BrandProvider>
-        </AuthProvider>
+        <ConvexClientProvider>
+          <AuthProvider>
+            <BrandProvider>
+              <Header />
+              {children}
+              <Footer />
+              <FloatingChatWidget />
+              <Toaster position="top-right" />
+            </BrandProvider>
+          </AuthProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );

@@ -10,7 +10,8 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, storage } from "@/lib/firebase/firebase";
+import { auth } from "@/lib/firebase/firebase";
+import { createUserProfile } from "@/lib/firebase/firestoreService";
 import { useRouter } from "next/navigation";
 import { User } from "@/lib/types";
 import { setLocalStorageItem, getLocalStorageItem } from "./useLocalStorage";
@@ -18,30 +19,30 @@ import { setLocalStorageItem, getLocalStorageItem } from "./useLocalStorage";
 export function useAuthActions() {
   const router = useRouter();
 
-  const uploadProfileImage = async (
-    file: File,
-    userId: string
-  ): Promise<string> => {
-    try {
-      const imageRef = ref(
-        storage,
-        `profile-images/${userId}/${Date.now()}_${file.name}`
-      );
-      await uploadBytes(imageRef, file);
-      const downloadURL = await getDownloadURL(imageRef);
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading profile image:", error);
-      throw new Error("Failed to upload profile image");
-    }
-  };
+  // const uploadProfileImage = async (
+  //   file: File,
+  //   userId: string
+  // ): Promise<string> => {
+  //   try {
+  //     const imageRef = ref(
+  //       storage,
+  //       `profile-images/${userId}/${Date.now()}_${file.name}`
+  //     );
+  //     await uploadBytes(imageRef, file);
+  //     const downloadURL = await getDownloadURL(imageRef);
+  //     return downloadURL;
+  //   } catch (error) {
+  //     console.error("Error uploading profile image:", error);
+  //     throw new Error("Failed to upload profile image");
+  //   }
+  // };
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
       const user = userCredential.user;
 
@@ -170,13 +171,13 @@ export function useAuthActions() {
       bio?: string;
       dateOfBirth?: string;
       profileImage?: File;
-    }
+    },
   ) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
       const user = userCredential.user;
 
@@ -187,22 +188,22 @@ export function useAuthActions() {
 
       // Upload profile image if provided
       let photoURL = "";
-      if (additionalData?.profileImage) {
-        try {
-          photoURL = await uploadProfileImage(
-            additionalData.profileImage,
-            user.uid
-          );
-          // Update Firebase Auth profile with uploaded image
-          await updateProfile(user, {
-            displayName: name,
-            photoURL: photoURL,
-          });
-        } catch (imageError) {
-          console.error("Error uploading profile image:", imageError);
-          // Continue with user creation even if image upload fails
-        }
-      }
+      // if (additionalData?.profileImage) {
+      //   try {
+      //     photoURL = await uploadProfileImage(
+      //       additionalData.profileImage,
+      //       user.uid
+      //     );
+      //     // Update Firebase Auth profile with uploaded image
+      //     await updateProfile(user, {
+      //       displayName: name,
+      //       photoURL: photoURL,
+      //     });
+      //   } catch (imageError) {
+      //     console.error("Error uploading profile image:", imageError);
+      //     // Continue with user creation even if image upload fails
+      //   }
+      // }
 
       // Create comprehensive user data in localStorage
       const userData: any = {
@@ -238,6 +239,25 @@ export function useAuthActions() {
 
       setLocalStorageItem(`user_${user.uid}`, userData);
       console.log("New email user data saved to localStorage");
+
+      // Save user profile to Firestore
+      try {
+        await createUserProfile(user.uid, {
+          email: user.email || "",
+          firstName: name.split(" ")[0] || "",
+          lastName: name.split(" ").slice(1).join(" ") || "",
+          country: additionalData?.country,
+          phone: additionalData?.phone,
+          photoURL: photoURL || undefined,
+          address: additionalData?.address,
+          bio: additionalData?.bio,
+          dateOfBirth: additionalData?.dateOfBirth,
+        });
+        console.log("User profile saved to Firestore");
+      } catch (firestoreError) {
+        console.error("Error saving user to Firestore:", firestoreError);
+        // Continue even if Firestore save fails
+      }
 
       // New users always go to onboarding
       sessionStorage.removeItem("redirectUrl");
@@ -296,6 +316,23 @@ export function useAuthActions() {
 
         setLocalStorageItem(userDataKey, userData);
         console.log("New Google signup user data saved to localStorage");
+
+        // Save user profile to Firestore
+        try {
+          await createUserProfile(user.uid, {
+            email: user.email || "",
+            firstName: user.displayName?.split(" ")[0] || "",
+            lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+            photoURL: user.photoURL || undefined,
+          });
+          console.log("Google user profile saved to Firestore");
+        } catch (firestoreError) {
+          console.error(
+            "Error saving Google user to Firestore:",
+            firestoreError,
+          );
+          // Continue even if Firestore save fails
+        }
 
         // New Google users go to onboarding
         sessionStorage.removeItem("redirectUrl");
@@ -359,6 +396,6 @@ export function useAuthActions() {
     signUpWithEmail,
     signupWithGoogle,
     logout,
-    uploadProfileImage,
+    // uploadProfileImage,
   };
 }
