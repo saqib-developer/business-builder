@@ -10,8 +10,15 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 
-export default function ModernShopTemplate() {
+import { TemplateConfig } from "@/lib/types/template";
+
+export default function ModernShopTemplate({ config }: { config?: TemplateConfig }) {
   const { brandSettings } = useBrand();
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
+  const headline = config?.content?.heroHeadline || brandSettings.businessName;
+  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const heroImage = config?.content?.heroImage;
 
   const products = [
     { id: 1, name: "Premium Product", price: 99.99, rating: 4.5, image: "🎨" },
@@ -33,14 +40,14 @@ export default function ModernShopTemplate() {
   ];
 
   return (
-    <TemplateLayout style="modern">
+    <TemplateLayout style="modern" config={config}>
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-gray-50 to-gray-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                {brandSettings.tagline}
+                {subheadline}
               </h1>
               <p className="text-xl text-gray-600 mb-8">
                 Discover our curated collection of premium products designed to
@@ -48,7 +55,7 @@ export default function ModernShopTemplate() {
               </p>
               <button
                 className="px-8 py-4 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity flex items-center space-x-2"
-                style={{ backgroundColor: brandSettings.primaryColor }}
+                style={{ backgroundColor: primaryColor }}
               >
                 <span>Shop Now</span>
                 <FiArrowRight />
@@ -69,7 +76,7 @@ export default function ModernShopTemplate() {
               <div key={index} className="flex items-center space-x-4">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white"
-                  style={{ backgroundColor: brandSettings.primaryColor }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   {feature.icon}
                 </div>
@@ -128,13 +135,13 @@ export default function ModernShopTemplate() {
                   <div className="flex items-center justify-between">
                     <span
                       className="text-2xl font-bold"
-                      style={{ color: brandSettings.primaryColor }}
+                      style={{ color: primaryColor }}
                     >
                       ${product.price}
                     </span>
                     <button
                       className="px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: brandSettings.primaryColor }}
+                      style={{ backgroundColor: primaryColor }}
                     >
                       Add to Cart
                     </button>
@@ -149,7 +156,7 @@ export default function ModernShopTemplate() {
       {/* CTA Section */}
       <section
         className="py-16"
-        style={{ backgroundColor: brandSettings.primaryColor + "10" }}
+        style={{ backgroundColor: primaryColor + "10" }}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -166,7 +173,7 @@ export default function ModernShopTemplate() {
             />
             <button
               className="px-8 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: brandSettings.primaryColor }}
+              style={{ backgroundColor: primaryColor }}
             >
               Subscribe
             </button>

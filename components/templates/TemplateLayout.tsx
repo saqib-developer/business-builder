@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { useBrand } from "@/lib/context/BrandContext";
+import { TemplateConfig } from "@/lib/types/template";
 import {
   FiShoppingBag,
   FiSearch,
@@ -13,13 +14,20 @@ import {
 interface TemplateLayoutProps {
   children: ReactNode;
   style: "modern" | "classic" | "minimal" | "bold";
+  config?: TemplateConfig;
 }
 
 export default function TemplateLayout({
   children,
   style,
+  config,
 }: TemplateLayoutProps) {
   const { brandSettings } = useBrand();
+
+  const primaryColor = config?.theme?.primaryColor || brandSettings?.primaryColor || "#3b82f6";
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings?.secondaryColor || "#1e40af";
+  const businessName = brandSettings?.businessName || "My Business";
+  const tagline = brandSettings?.tagline || "";
 
   const navLinks = ["Home", "Shop", "About", "Contact"];
 
@@ -34,7 +42,7 @@ export default function TemplateLayout({
           borderColor:
             style === "minimal"
               ? "#f3f4f6"
-              : brandSettings.secondaryColor + "30",
+              : secondaryColor + "30",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -43,14 +51,14 @@ export default function TemplateLayout({
             <div className="flex items-center space-x-2">
               <FiShoppingBag
                 className="w-8 h-8"
-                style={{ color: brandSettings.primaryColor }}
+                style={{ color: primaryColor }}
               />
               <span
                 className={`text-xl font-bold ${
                   style === "bold" ? "text-white" : ""
                 }`}
               >
-                {brandSettings.businessName}
+                {businessName}
               </span>
             </div>
 
@@ -81,7 +89,7 @@ export default function TemplateLayout({
                 <FiShoppingCart className="w-5 h-5" />
                 <span
                   className="absolute -top-2 -right-2 w-4 h-4 rounded-full text-xs flex items-center justify-center text-white"
-                  style={{ backgroundColor: brandSettings.primaryColor }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   0
                 </span>
@@ -106,7 +114,7 @@ export default function TemplateLayout({
           borderColor:
             style === "minimal"
               ? "#f3f4f6"
-              : brandSettings.secondaryColor + "30",
+              : secondaryColor + "30",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -115,16 +123,16 @@ export default function TemplateLayout({
               <div className="flex items-center space-x-2 mb-4">
                 <FiShoppingBag
                   className="w-6 h-6"
-                  style={{ color: brandSettings.primaryColor }}
+                  style={{ color: primaryColor }}
                 />
-                <span className="font-bold">{brandSettings.businessName}</span>
+                <span className="font-bold">{businessName}</span>
               </div>
               <p
                 className={`text-sm ${
                   style === "bold" ? "text-gray-400" : "text-gray-600"
                 }`}
               >
-                {brandSettings.tagline}
+                {tagline}
               </p>
             </div>
             <div>
@@ -208,7 +216,7 @@ export default function TemplateLayout({
             }`}
           >
             <p>
-              &copy; 2025 {brandSettings.businessName}. All rights reserved.
+              &copy; 2025 {businessName}. All rights reserved.
             </p>
           </div>
         </div>

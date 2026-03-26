@@ -16,8 +16,8 @@ import {
 import { firestore } from "./firebase";
 
 // Helper function to remove undefined values from objects before saving to Firestore
-function cleanUndefinedValues(obj: any): any {
-  const cleaned: any = {};
+function cleanUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const cleaned: Partial<T> = {};
   for (const key in obj) {
     if (obj[key] !== undefined) {
       cleaned[key] = obj[key];
@@ -376,7 +376,6 @@ export async function sendMessage(
     "messages",
   );
 
-  // Clean undefined values before saving to Firestore
   const messageDoc = await addDoc(
     messagesRef,
     cleanUndefinedValues({
@@ -392,21 +391,19 @@ export async function sendMessage(
     }),
   );
 
-  // Update conversation with last message
   const conversationRef = doc(firestore, "conversations", conversationId);
+  const conversationSnap = await getDoc(conversationRef);
+  const currentUnread = conversationSnap.exists() ? conversationSnap.data().unreadCount ?? 0 : 0;
+
   await updateDoc(conversationRef, {
     lastMessage: content || "Image",
     lastMessageAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    unreadCount:
-      senderType === "user"
-        ? 0
-        : (await getDoc(conversationRef)).data()?.unreadCount + 1 || 1,
+    unreadCount: senderType === "user" ? 0 : currentUnread + 1,
   });
 
   return messageDoc.id;
 }
-
 export function subscribeToMessages(
   conversationId: string,
   callback: (messages: ChatMessage[]) => void,
@@ -428,6 +425,7 @@ export function subscribeToMessages(
   });
 }
 
+
 export async function markMessagesAsRead(
   conversationId: string,
   userId: string,
@@ -447,9 +445,8 @@ export async function markMessagesAsRead(
 
   await Promise.all(updates);
 
-  // Reset unread count
   const conversationRef = doc(firestore, "conversations", conversationId);
-  await updateDoc(conversationRef, { unreadCount: 0 });
+  await updateDoc(conversationRef, { unreadCount: 0, updatedAt: serverTimestamp() });
 }
 
 // ============= COMMUNITY POSTS =============

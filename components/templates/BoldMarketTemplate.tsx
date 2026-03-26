@@ -4,8 +4,15 @@ import { useBrand } from "@/lib/context/BrandContext";
 import TemplateLayout from "@/components/templates/TemplateLayout";
 import { FiZap, FiTrendingUp, FiAward } from "react-icons/fi";
 
-export default function BoldMarketTemplate() {
+import { TemplateConfig } from "@/lib/types/template";
+
+export default function BoldMarketTemplate({ config }: { config?: TemplateConfig }) {
   const { brandSettings } = useBrand();
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
+  const headline = config?.content?.heroHeadline || brandSettings.businessName;
+  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const heroImage = config?.content?.heroImage;
 
   const deals = [
     {
@@ -86,24 +93,24 @@ export default function BoldMarketTemplate() {
   ];
 
   return (
-    <TemplateLayout style="bold">
+    <TemplateLayout style="bold" config={config}>
       {/* Bold Hero */}
       <section className="bg-black text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="text-6xl mb-4">🎉</div>
             <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight">
-              {brandSettings.tagline.toUpperCase()}
+              {subheadline.toUpperCase()}
             </h1>
             <p
               className="text-2xl md:text-3xl font-bold mb-8"
-              style={{ color: brandSettings.primaryColor }}
+              style={{ color: primaryColor }}
             >
               INCREDIBLE DEALS • UNBEATABLE PRICES
             </p>
             <button
               className="px-12 py-5 text-black font-black text-xl hover:scale-105 transition-transform"
-              style={{ backgroundColor: brandSettings.primaryColor }}
+              style={{ backgroundColor: primaryColor }}
             >
               SHOP NOW 🔥
             </button>
@@ -114,7 +121,7 @@ export default function BoldMarketTemplate() {
       {/* Deals Banner */}
       <section
         className="py-12"
-        style={{ backgroundColor: brandSettings.primaryColor }}
+        style={{ backgroundColor: primaryColor }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-6">
@@ -129,7 +136,7 @@ export default function BoldMarketTemplate() {
                 </h3>
                 <div
                   className="text-4xl font-black mb-2"
-                  style={{ color: brandSettings.primaryColor }}
+                  style={{ color: primaryColor }}
                 >
                   {deal.discount}
                 </div>
@@ -151,7 +158,7 @@ export default function BoldMarketTemplate() {
               >
                 <div
                   className="text-3xl"
-                  style={{ color: brandSettings.primaryColor }}
+                  style={{ color: primaryColor }}
                 >
                   {feature.icon}
                 </div>
@@ -181,7 +188,7 @@ export default function BoldMarketTemplate() {
               <div
                 key={product.id}
                 className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow border-4 border-transparent hover:border-current"
-                style={{ "--hover-color": brandSettings.primaryColor } as any}
+                style={{ "--hover-color": primaryColor } as any}
               >
                 <div className="relative">
                   <div
@@ -209,7 +216,7 @@ export default function BoldMarketTemplate() {
                     <div>
                       <div
                         className="text-3xl font-black"
-                        style={{ color: brandSettings.primaryColor }}
+                        style={{ color: primaryColor }}
                       >
                         ${product.price}
                       </div>
@@ -231,7 +238,7 @@ export default function BoldMarketTemplate() {
                   </div>
                   <button
                     className="w-full py-4 text-white font-black text-lg hover:scale-105 transition-transform rounded-lg shadow-lg"
-                    style={{ backgroundColor: brandSettings.primaryColor }}
+                    style={{ backgroundColor: primaryColor }}
                   >
                     ADD TO CART 🛒
                   </button>
@@ -250,7 +257,7 @@ export default function BoldMarketTemplate() {
           </h2>
           <p
             className="text-2xl font-bold mb-8"
-            style={{ color: brandSettings.primaryColor }}
+            style={{ color: primaryColor }}
           >
             Join 50,000+ Happy Customers Today
           </p>
@@ -262,7 +269,7 @@ export default function BoldMarketTemplate() {
             />
             <button
               className="px-10 py-4 rounded-lg font-black text-lg text-black hover:scale-105 transition-transform"
-              style={{ backgroundColor: brandSettings.primaryColor }}
+              style={{ backgroundColor: primaryColor }}
             >
               GET DEALS!
             </button>

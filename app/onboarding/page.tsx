@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { firestore } from "@/lib/firebase/firebase";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
   OnboardingData,
@@ -16,16 +18,29 @@ import Step4SocialMedia from "@/components/onboarding/Step4SocialMedia";
 import Step5WebsiteBuilder from "@/components/onboarding/Step5WebsiteBuilder";
 import { FiCheck } from "react-icons/fi";
 
+// Local helper function as `saveOnboardingData` was not officially exposed previously
+async function saveOnboardingData(userId: string, data: Partial<OnboardingData>) {
+  try {
+    const userRef = doc(firestore, "users", userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      await updateDoc(userRef, { onboarding: data });
+    } else {
+      await setDoc(userRef, { onboarding: data }, { merge: true });
+    }
+  } catch (error) {
+    console.error("Error saving onboarding data to Firestore:", error);
+  }
+}
+
 function OnboardingContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
-  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>(
-    {
-      completedSteps: [],
-    }
-  );
+  const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>();
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   useEffect(() => {
     // Redirect to sign-in if not authenticated
@@ -34,29 +49,34 @@ function OnboardingContent() {
       return;
     }
 
+    if (initialDataLoaded) return; // Prevent double loads
+
     // Check if user wants to edit a specific step
     const stepParam = searchParams.get("step");
 
     // Load saved onboarding data from localStorage
     const saved = localStorage.getItem(`onboarding_${user.id}`);
+    
+    // Create an immutable reference scope so we update both state properties cleanly without chaining rules
+    let loadedData: Partial<OnboardingData> = { completedSteps: [] };
+    let initialStep = 1;
+    
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setOnboardingData(data);
-
+        loadedData = data;
+        
         // If step parameter is provided, go to that step
         if (stepParam) {
           const requestedStep = parseInt(stepParam);
           if (requestedStep >= 1 && requestedStep <= 5) {
-            setCurrentStep(requestedStep);
-            return;
+            initialStep = requestedStep;
           }
-        }
-
+        } 
         // Otherwise, resume from last incomplete step
-        if (data.completedSteps && data.completedSteps.length > 0) {
+        else if (data.completedSteps && data.completedSteps.length > 0) {
           const lastStep = Math.max(...data.completedSteps);
-          setCurrentStep(lastStep + 1 > 5 ? 5 : lastStep + 1);
+          initialStep = lastStep + 1 > 5 ? 5 : lastStep + 1;
         }
       } catch (error) {
         console.error("Error loading onboarding data:", error);
@@ -65,10 +85,21 @@ function OnboardingContent() {
       // If no saved data but step param exists, go to that step
       const requestedStep = parseInt(stepParam);
       if (requestedStep >= 1 && requestedStep <= 5) {
-        setCurrentStep(requestedStep);
+        initialStep = requestedStep;
       }
     }
-  }, [user, router, searchParams]);
+    
+    // Use timeout to bypass cascading render errors from sync effect boundaries.
+    setTimeout(() => {
+      setOnboardingData(loadedData);
+      setCurrentStep(initialStep);
+      setInitialDataLoaded(true);
+    }, 0);
+    
+  }, [user, router, searchParams, initialDataLoaded]);
+
+  // Make sure we have a fallback for when the loading yields nothing or initial state
+  const currentOnboardingData = onboardingData || { completedSteps: [] };
 
   const saveProgress = (data: Partial<OnboardingData>) => {
     if (user) {
@@ -86,14 +117,14 @@ function OnboardingContent() {
   };
 
   const markStepComplete = (step: number) => {
-    const completedSteps = [...(onboardingData.completedSteps || [])];
+    const completedSteps = [...(currentOnboardingData.completedSteps || [])];
     if (!completedSteps.includes(step)) {
       completedSteps.push(step);
     }
     return completedSteps;
   };
 
-  const isEditing = onboardingData?.isComplete === true;
+  const isEditing = currentOnboardingData?.isComplete === true;
 
   const handleSaveAndReturn = () => {
     router.push("/dashboard");
@@ -102,7 +133,7 @@ function OnboardingContent() {
   const handleStep2Complete = (businessName: string) => {
     const completedSteps = markStepComplete(2);
     saveProgress({
-      ...onboardingData,
+      ...currentOnboardingData,
       businessName,
       completedSteps,
     });
@@ -116,7 +147,7 @@ function OnboardingContent() {
   const handleStep3Complete = (logoData: LogoSetup) => {
     const completedSteps = markStepComplete(3);
     saveProgress({
-      ...onboardingData,
+      ...currentOnboardingData,
       logo: logoData,
       completedSteps,
     });
@@ -130,7 +161,7 @@ function OnboardingContent() {
   const handleStep4Complete = (socialData: SocialMediaSetup) => {
     const completedSteps = markStepComplete(4);
     saveProgress({
-      ...onboardingData,
+      ...currentOnboardingData,
       socialMedia: socialData,
       completedSteps,
     });
@@ -141,15 +172,19 @@ function OnboardingContent() {
     }
   };
 
-  const handleStep5Complete = (websiteData: WebsiteSetup) => {
+  const handleStep5Complete = async (websiteData: WebsiteSetup) => {
     const completedSteps = markStepComplete(5);
     const finalData = {
-      ...onboardingData,
+      ...currentOnboardingData,
       website: websiteData,
       completedSteps,
       isComplete: true,
     };
     saveProgress(finalData);
+
+    if (user) {
+      await saveOnboardingData(user.id, finalData);
+    }
 
     // Redirect to dashboard
     router.push("/dashboard");
@@ -163,7 +198,7 @@ function OnboardingContent() {
     { number: 5, name: "Website" },
   ];
 
-  if (!user) {
+  if (!user || !initialDataLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -233,7 +268,7 @@ function OnboardingContent() {
 
         {currentStep === 2 && (
           <Step2BusinessName
-            initialValue={onboardingData.businessName}
+            initialValue={currentOnboardingData.businessName}
             onNext={handleStep2Complete}
             onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(1)}
             isEditing={isEditing}
@@ -242,7 +277,7 @@ function OnboardingContent() {
 
         {currentStep === 3 && (
           <Step3LogoSetup
-            initialValue={onboardingData.logo}
+            initialValue={currentOnboardingData.logo}
             onNext={handleStep3Complete}
             onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(2)}
             isEditing={isEditing}
@@ -251,7 +286,7 @@ function OnboardingContent() {
 
         {currentStep === 4 && (
           <Step4SocialMedia
-            initialValue={onboardingData.socialMedia}
+            initialValue={currentOnboardingData.socialMedia}
             onNext={handleStep4Complete}
             onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(3)}
             isEditing={isEditing}
@@ -260,7 +295,7 @@ function OnboardingContent() {
 
         {currentStep === 5 && (
           <Step5WebsiteBuilder
-            businessName={onboardingData.businessName || "Your Business"}
+            businessName={currentOnboardingData.businessName || "Your Business"}
             onNext={handleStep5Complete}
             onBack={() => setCurrentStep(4)}
           />

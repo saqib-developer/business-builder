@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FiArrowRight, FiGlobe, FiCheckCircle, FiLock } from "react-icons/fi";
 import { SiWordpress } from "react-icons/si";
 import { FaCode } from "react-icons/fa";
@@ -8,8 +9,10 @@ import MotivationalQuote from "./MotivationalQuote";
 import { WebsiteSetup } from "@/lib/types/onboarding";
 import { TEMPLATES } from "@/lib/types/template";
 import Image from "next/image";
+import Step5BCustomizer from "./Step5BCustomizer";
 
 interface Step5WebsiteBuilderProps {
+  initialData?: WebsiteSetup;
   businessName: string;
   onNext: (websiteData: WebsiteSetup) => void;
   onBack: () => void;
@@ -17,22 +20,21 @@ interface Step5WebsiteBuilderProps {
 
 export default function Step5WebsiteBuilder({
   businessName,
+  initialData,
   onNext,
   onBack,
 }: Step5WebsiteBuilderProps) {
-  const [selectedOption, setSelectedOption] = useState<
-    "template" | "wordpress" | "custom" | null
-  >(null);
+  const searchParams = useSearchParams();
+  const editMode = searchParams?.get("edit") === "true";
+  const [mode, setMode] = useState<"select" | "customize">(editMode ? "customize" : "select");
+  const [selectedOption, setSelectedOption] = useState<'template' | 'wordpress' | 'custom' | null>(initialData?.type && ['template', 'wordpress', 'custom'].includes(initialData.type) ? initialData.type as any : null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
-    null,
+    initialData?.templateId || null
   );
 
   const handleContinue = () => {
     if (selectedOption === "template" && selectedTemplateId) {
-      onNext({
-        type: "template",
-        templateId: selectedTemplateId,
-      });
+      setMode("customize");
     } else if (selectedOption === "wordpress") {
       onNext({
         type: "wordpress",
@@ -43,6 +45,18 @@ export default function Step5WebsiteBuilder({
       });
     }
   };
+
+  if (mode === "customize" && selectedOption === "template" && selectedTemplateId) {
+    return (
+      <Step5BCustomizer
+          businessName={businessName}
+          templateId={selectedTemplateId}
+          initialConfig={initialData?.templateId === selectedTemplateId ? initialData?.config : undefined}
+          onFinish={onNext}
+          onBack={() => setMode("select")}
+        />
+    );
+  }
 
   const canContinue =
     (selectedOption === "template" && selectedTemplateId) ||

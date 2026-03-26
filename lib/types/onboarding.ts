@@ -37,6 +37,7 @@ export interface SocialPlatform {
 export interface WebsiteSetup {
   type: "template" | "wordpress" | "custom" | null;
   templateId?: string;
+  config?: any; // Add config property
   customizations?: TemplateCustomizations;
 }
 

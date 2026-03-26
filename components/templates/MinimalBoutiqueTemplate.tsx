@@ -4,8 +4,15 @@ import { useBrand } from "@/lib/context/BrandContext";
 import TemplateLayout from "@/components/templates/TemplateLayout";
 import { FiArrowRight } from "react-icons/fi";
 
-export default function MinimalBoutiqueTemplate() {
+import { TemplateConfig } from "@/lib/types/template";
+
+export default function MinimalBoutiqueTemplate({ config }: { config?: TemplateConfig }) {
   const { brandSettings } = useBrand();
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
+  const headline = config?.content?.heroHeadline || brandSettings.businessName;
+  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const heroImage = config?.content?.heroImage;
 
   const collections = [
     { name: "Spring Collection", items: 24, image: "🌸" },
@@ -21,18 +28,18 @@ export default function MinimalBoutiqueTemplate() {
   ];
 
   return (
-    <TemplateLayout style="minimal">
+    <TemplateLayout style="minimal" config={config}>
       {/* Hero - Minimal */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p
             className="text-sm font-medium mb-4 tracking-widest uppercase"
-            style={{ color: brandSettings.primaryColor }}
+            style={{ color: primaryColor }}
           >
-            {brandSettings.businessName}
+            {headline}
           </p>
           <h1 className="text-6xl md:text-7xl font-light text-gray-900 mb-6 tracking-tight">
-            {brandSettings.tagline}
+            {subheadline}
           </h1>
           <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto">
             Discover our carefully curated collection of timeless pieces
@@ -40,17 +47,17 @@ export default function MinimalBoutiqueTemplate() {
           <button
             className="px-8 py-3 border-2 font-medium hover:text-white transition-colors"
             style={{
-              borderColor: brandSettings.primaryColor,
-              color: brandSettings.primaryColor,
+              borderColor: primaryColor,
+              color: primaryColor,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor =
-                brandSettings.primaryColor;
+                primaryColor;
               e.currentTarget.style.color = "white";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = brandSettings.primaryColor;
+              e.currentTarget.style.color = primaryColor;
             }}
           >
             Explore Collection
@@ -104,7 +111,7 @@ export default function MinimalBoutiqueTemplate() {
             <a
               href="#"
               className="flex items-center space-x-2 text-sm hover:opacity-70 transition-opacity"
-              style={{ color: brandSettings.primaryColor }}
+              style={{ color: primaryColor }}
             >
               <span>View All</span>
               <FiArrowRight className="w-4 h-4" />
@@ -123,7 +130,7 @@ export default function MinimalBoutiqueTemplate() {
                 </h3>
                 <p
                   className="text-sm"
-                  style={{ color: brandSettings.primaryColor }}
+                  style={{ color: primaryColor }}
                 >
                   ${product.price}
                 </p>
@@ -165,7 +172,7 @@ export default function MinimalBoutiqueTemplate() {
             />
             <button
               className="px-8 py-3 text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: brandSettings.primaryColor }}
+              style={{ backgroundColor: primaryColor }}
             >
               Subscribe
             </button>

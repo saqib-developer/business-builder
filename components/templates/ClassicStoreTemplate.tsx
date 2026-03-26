@@ -4,8 +4,15 @@ import { useBrand } from "@/lib/context/BrandContext";
 import TemplateLayout from "@/components/templates/TemplateLayout";
 import { FiTag, FiAward, FiUsers, FiHeart } from "react-icons/fi";
 
-export default function ClassicStoreTemplate() {
+import { TemplateConfig } from "@/lib/types/template";
+
+export default function ClassicStoreTemplate({ config }: { config?: TemplateConfig }) {
   const { brandSettings } = useBrand();
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
+  const headline = config?.content?.heroHeadline || brandSettings.businessName;
+  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const heroImage = config?.content?.heroImage;
 
   const categories = [
     { name: "New Arrivals", icon: "🆕", count: 24 },
@@ -57,11 +64,11 @@ export default function ClassicStoreTemplate() {
   ];
 
   return (
-    <TemplateLayout style="classic">
+    <TemplateLayout style="classic" config={config}>
       {/* Announcement Bar */}
       <div
         className="text-center py-2 text-sm text-white"
-        style={{ backgroundColor: brandSettings.primaryColor }}
+        style={{ backgroundColor: primaryColor }}
       >
         🎉 Free Shipping on Orders Over $50 | Shop Now and Save!
       </div>
@@ -71,14 +78,14 @@ export default function ClassicStoreTemplate() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Welcome to {brandSettings.businessName}
+              Welcome to {headline}
             </h1>
             <p className="text-2xl text-gray-600 mb-8">
-              {brandSettings.tagline}
+              {subheadline}
             </p>
             <button
               className="px-10 py-4 rounded-md text-white font-semibold text-lg hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: brandSettings.primaryColor }}
+              style={{ backgroundColor: primaryColor }}
             >
               Start Shopping
             </button>
@@ -97,7 +104,7 @@ export default function ClassicStoreTemplate() {
               <div
                 key={index}
                 className="bg-white border-2 border-gray-200 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
-                style={{ "--hover-color": brandSettings.primaryColor } as any}
+                style={{ "--hover-color": primaryColor } as any}
               >
                 <div className="text-5xl mb-3">{category.icon}</div>
                 <h3 className="font-semibold text-gray-900 mb-1">
@@ -153,7 +160,7 @@ export default function ClassicStoreTemplate() {
                     <div>
                       <span
                         className="text-2xl font-bold"
-                        style={{ color: brandSettings.primaryColor }}
+                        style={{ color: primaryColor }}
                       >
                         ${product.price}
                       </span>
@@ -166,7 +173,7 @@ export default function ClassicStoreTemplate() {
                   </div>
                   <button
                     className="w-full py-3 rounded-md text-white font-medium hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: brandSettings.primaryColor }}
+                    style={{ backgroundColor: primaryColor }}
                   >
                     Add to Cart
                   </button>
@@ -185,7 +192,7 @@ export default function ClassicStoreTemplate() {
               <div key={index}>
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl"
-                  style={{ backgroundColor: brandSettings.primaryColor }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   {stat.icon}
                 </div>
@@ -202,7 +209,7 @@ export default function ClassicStoreTemplate() {
       {/* Newsletter */}
       <section
         className="py-16"
-        style={{ backgroundColor: brandSettings.primaryColor }}
+        style={{ backgroundColor: primaryColor }}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
@@ -219,7 +226,7 @@ export default function ClassicStoreTemplate() {
             />
             <button
               className="px-8 py-3 bg-white rounded-md font-semibold hover:bg-gray-100 transition-colors"
-              style={{ color: brandSettings.primaryColor }}
+              style={{ color: primaryColor }}
             >
               Subscribe
             </button>

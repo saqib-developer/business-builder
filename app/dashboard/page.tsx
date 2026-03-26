@@ -83,7 +83,7 @@ export default function DashboardPage() {
       icon: <FiLayout className="w-6 h-6" />,
       title: "Choose Template",
       description: "Select from our pre-made website templates",
-      href: "/templates",
+      href: "/onboarding?step=5",
       color: "bg-blue-500",
     },
     {
@@ -431,7 +431,7 @@ export default function DashboardPage() {
               {/* Website */}
               <div className="flex items-start justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200">
                 <button
-                  onClick={() => router.push("/templates")}
+                  onClick={() => router.push("/onboarding?step=5")}
                   className="flex items-start gap-3 flex-1 text-left group"
                 >
                   <FiGlobe className="w-5 h-5 text-indigo-600 mt-0.5" />
@@ -448,6 +448,14 @@ export default function DashboardPage() {
                 </button>
                 <div className="flex items-center gap-2">
                   {localOnboardingData.website?.templateId && (
+                    <button
+                      onClick={() => router.push("/onboarding?step=5&edit=true")}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium mr-2"
+                    >
+                      Customize
+                    </button>
+                  )}
+                  {localOnboardingData.website?.templateId && (
                     <Link
                       href={`/templates/preview/${localOnboardingData.website.templateId}`}
                       className="text-blue-600 hover:text-blue-700 text-sm font-medium"
@@ -456,7 +464,7 @@ export default function DashboardPage() {
                     </Link>
                   )}
                   <button
-                    onClick={() => router.push("/templates")}
+                    onClick={() => router.push("/onboarding?step=5")}
                     className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                   >
                     {localOnboardingData.website?.templateId
@@ -477,7 +485,7 @@ export default function DashboardPage() {
 
             <div className="space-y-3">
               <Link
-                href="/templates"
+                href="/onboarding?step=5"
                 className="block p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
               >
                 <div className="flex items-center gap-3">

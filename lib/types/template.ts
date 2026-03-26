@@ -9,6 +9,19 @@ export interface BrandSettings {
   selectedTemplateId: string | null;
 }
 
+export interface TemplateConfig {
+  templateId: string;
+  theme: {
+    primaryColor: string;
+    secondaryColor: string;
+  };
+  content: {
+    heroHeadline: string;
+    heroSubheadline: string;
+    heroImage?: string;
+  };
+}
+
 export interface Template {
   id: string;
   name: string;
