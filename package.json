@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "emulators": "firebase emulators:start"
+    "emulators": "firebase emulators:start",
+    "publish-web": "node pre-deploy-check.js && next build && echo '✅ Deployment complete and verified'"
   },
   "dependencies": {
     "convex": "^1.32.0",

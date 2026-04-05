@@ -7,7 +7,6 @@ import { ConvexClientProvider } from "@/lib/context/ConvexClientProvider";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import FloatingChatWidget from "@/components/chat/FloatingChatWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +41,6 @@ export default function RootLayout({
               <Header />
               {children}
               <Footer />
-              <FloatingChatWidget />
               <Toaster position="top-right" />
             </BrandProvider>
           </AuthProvider>

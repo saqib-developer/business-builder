@@ -1,3 +1,4 @@
+import { APP_CONFIG } from "@/lib/constant";
 import Link from "next/link";
 import { ShoppingBag, Mail, GitHub, Twitter } from "react-feather";
 
@@ -33,14 +34,6 @@ export default function Footer() {
                   className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/templates"
-                  className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Templates
                 </Link>
               </li>
               <li>
@@ -86,30 +79,13 @@ export default function Footer() {
             </h3>
             <div className="flex space-x-4">
               <a
-                href="mailto:support@businessbuilder.com"
+                href={`mailto:${APP_CONFIG.contact.support}`}
                 className="text-gray-600 hover:text-blue-600 transition-colors"
                 aria-label="Email"
               >
                 <Mail className="h-5 w-5" />
               </a>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-                aria-label="GitHub"
-              >
-                <GitHub className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
+              
             </div>
           </div>
         </div>
