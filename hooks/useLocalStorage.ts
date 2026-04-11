@@ -27,9 +27,7 @@ export function useLocalStorage<T>(
       const item = window.localStorage.getItem(key);
       // Parse stored json or if none return initialValue
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      // If error also return initialValue
-      console.error(`Error loading localStorage key "${key}":`, error);
+    } catch {
       return initialValue;
     }
   });
@@ -49,9 +47,7 @@ export function useLocalStorage<T>(
       if (typeof window !== "undefined") {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) {
-      // A more advanced implementation would handle the error case
-      console.error(`Error saving localStorage key "${key}":`, error);
+    } catch {
     }
   };
 
@@ -72,8 +68,7 @@ export function getLocalStorageItem<T>(key: string, defaultValue: T): T {
   try {
     const item = window.localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.error(`Error getting localStorage key "${key}":`, error);
+  } catch {
     return defaultValue;
   }
 }
@@ -90,8 +85,7 @@ export function setLocalStorageItem<T>(key: string, value: T): void {
 
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Error setting localStorage key "${key}":`, error);
+  } catch {
   }
 }
 
@@ -106,8 +100,7 @@ export function removeLocalStorageItem(key: string): void {
 
   try {
     window.localStorage.removeItem(key);
-  } catch (error) {
-    console.error(`Error removing localStorage key "${key}":`, error);
+  } catch {
   }
 }
 
@@ -121,7 +114,6 @@ export function clearLocalStorage(): void {
 
   try {
     window.localStorage.clear();
-  } catch (error) {
-    console.error("Error clearing localStorage:", error);
+  } catch {
   }
 }

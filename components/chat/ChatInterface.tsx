@@ -1,27 +1,46 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FiSend, FiImage, FiLoader, FiX, FiAlertCircle } from "react-icons/fi";
+import { FiSend, FiImage, FiLoader, FiX, FiAlertCircle, FiCheck, FiDownload } from "react-icons/fi";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useConvexUpload } from "@/hooks/useConvexUpload";
 import {
+  Conversation,
+  initializeConversationIfNeeded,
   subscribeToMessages,
   sendMessage,
   markMessagesAsRead,
   ChatMessage,
+  saveLogoData,
 } from "@/lib/firebase/firestoreService";
+import { firestore } from "@/lib/firebase";
 import toast from "react-hot-toast";
 
 interface ChatInterfaceProps {
-  conversationId: string;
+  conversationId?: string;
   senderType: "user" | "admin";
   recipientName?: string;
+  conversationDescription?: string;
+  conversationType?: "logo" | "wordpress" | "custom-code";
+  lazyInitContext?: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+    conversationType: "logo" | "wordpress" | "custom-code";
+    customDesignRequestId?: string;
+  };
+  onConversationInitialized?: (conversation: Conversation) => void;
 }
 
 export default function ChatInterface({
   conversationId,
   senderType,
   recipientName = "Support Team",
+  conversationDescription = "Discuss your requirements with our support team",
+  conversationType,
+  lazyInitContext,
+  onConversationInitialized,
 }: ChatInterfaceProps) {
   const { user } = useAuth();
   const {
@@ -37,31 +56,69 @@ export default function ChatInterface({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLogoImage, setSelectedLogoImage] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId || null);
+  const [isInitializingConversation, setIsInitializingConversation] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setActiveConversationId(conversationId || null);
+  }, [conversationId]);
 
   // Subscribe to messages
   useEffect(() => {
-    if (!conversationId) return;
+    if (!activeConversationId) {
+      setMessages([]);
+      return;
+    }
 
-    const unsubscribe = subscribeToMessages(conversationId, (newMessages) => {
+    const unsubscribe = subscribeToMessages(activeConversationId, (newMessages) => {
       setMessages(newMessages);
     });
 
     return () => unsubscribe();
-  }, [conversationId]);
+  }, [activeConversationId]);
 
   // Mark messages as read when viewing
   useEffect(() => {
-    if (conversationId && user?.id) {
-      markMessagesAsRead(conversationId, user.id).catch(console.error);
+    if (activeConversationId && user?.id) {
+      markMessagesAsRead(activeConversationId, user.id).catch(console.error);
     }
-  }, [conversationId, user?.id, messages]);
+  }, [activeConversationId, user?.id, messages]);
 
-  // Scroll to bottom on new messages
+  // Restore selected custom logo so sidebar reflects active choice across reloads.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!user?.id || senderType !== "user" || conversationType !== "logo") {
+      return;
+    }
+
+    try {
+      const saved = localStorage.getItem(`onboarding_${user.id}`);
+      if (!saved) return;
+
+      const onboardingData = JSON.parse(saved);
+      const activeUrl = onboardingData?.logo?.type === "custom" ? onboardingData?.logo?.url : null;
+      if (activeUrl) {
+        setSelectedLogoImage(activeUrl);
+      }
+    } catch (loadError) {
+      console.error("Error restoring selected custom logo:", loadError);
+    }
+  }, [user?.id, senderType, conversationType]);
+
+  // Scroll to bottom on new messages - only scroll the chat container, not the whole page
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      setTimeout(() => {
+        messagesContainerRef.current?.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 0);
+    }
   }, [messages]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +158,35 @@ export default function ChatInterface({
     setError(null);
 
     try {
+      let workingConversationId = activeConversationId;
+
+      if (!workingConversationId) {
+        if (senderType !== "user" || !lazyInitContext) {
+          setError("Conversation is not ready yet.");
+          setIsSending(false);
+          return;
+        }
+
+        setIsInitializingConversation(true);
+        const initializedConversation = await initializeConversationIfNeeded({
+          userId: lazyInitContext.userId,
+          userEmail: lazyInitContext.userEmail,
+          userName: lazyInitContext.userName,
+          conversationType: lazyInitContext.conversationType,
+          customDesignRequestId: lazyInitContext.customDesignRequestId,
+        });
+        workingConversationId = initializedConversation.id || null;
+
+        if (!workingConversationId) {
+          throw new Error("Unable to create conversation.");
+        }
+
+        setActiveConversationId(workingConversationId);
+        if (onConversationInitialized) {
+          onConversationInitialized(initializedConversation);
+        }
+      }
+
       let imageUrl: string | undefined;
       let convexStorageId: string | undefined;
 
@@ -123,7 +209,7 @@ export default function ChatInterface({
 
       // Send message
       await sendMessage(
-        conversationId,
+        workingConversationId,
         user.id,
         senderType,
         `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
@@ -137,12 +223,12 @@ export default function ChatInterface({
       // Clear inputs
       setNewMessage("");
       clearSelectedImage();
-      toast.success("Message sent!");
     } catch (err: any) {
       console.error("Error sending message:", err);
       setError(err.message || "Failed to send message");
       toast.error("Failed to send message");
     } finally {
+      setIsInitializingConversation(false);
       setIsSending(false);
     }
   };
@@ -185,20 +271,103 @@ export default function ChatInterface({
     {},
   );
 
-  return (
-    <div className="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-200">
-      {/* Header */}
-      <div className="bg-white px-6 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Chat with {recipientName}
-        </h2>
-        <p className="text-sm text-gray-500">
-          Discuss your custom logo design requirements
-        </p>
-      </div>
+  // Extract unique images from messages (deduplicated by URL)
+  const uniqueImageMap = new Map<string, { url: string; sender: string; senderType: string; timestamp: any }>();
+  messages.forEach((msg) => {
+    if (msg.imageUrl && !uniqueImageMap.has(msg.imageUrl)) {
+      uniqueImageMap.set(msg.imageUrl, {
+        url: msg.imageUrl,
+        sender: msg.senderName,
+        senderType: msg.senderType,
+        timestamp: msg.createdAt,
+      });
+    }
+  });
+  const allImages = Array.from(uniqueImageMap.values());
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+  // Treat admin messages with an image and recommendation text as recommended choices.
+  const adminRecommendedImages = new Set(
+    messages
+      .filter(
+        (msg) =>
+          msg.senderType === "admin" &&
+          Boolean(msg.imageUrl) &&
+          Boolean(msg.content) &&
+          msg.content.toLowerCase().includes("recommend"),
+      )
+      .map((msg) => msg.imageUrl as string),
+  );
+
+  const handleSelectLogoImage = async (imageUrl: string) => {
+    if (conversationType !== "logo" || senderType !== "user" || !user?.id) return;
+
+    try {
+      setSelectedLogoImage(imageUrl);
+      
+      // Update onboarding data with selected logo
+      const saved = localStorage.getItem(`onboarding_${user.id}`);
+      const onboardingData = saved ? JSON.parse(saved) : {};
+      
+      onboardingData.logo = {
+        type: "custom",
+        url: imageUrl,
+        customDesignRequestId: onboardingData.logo?.customDesignRequestId,
+      };
+      
+      localStorage.setItem(`onboarding_${user.id}`, JSON.stringify(onboardingData));
+
+      // Persist selected logo to Firestore userLogos.
+      await saveLogoData(user.id, {
+        type: "custom",
+        url: imageUrl,
+        customDesignRequestId: onboardingData.logo?.customDesignRequestId,
+      });
+
+      // Persist onboarding.logo in users/{id}.onboarding so dashboard can recover across devices.
+      const userRef = doc(firestore, "users", user.id);
+      const userDoc = await getDoc(userRef);
+      const existingOnboarding = userDoc.exists() ? userDoc.data()?.onboarding || {} : {};
+      const mergedOnboarding = {
+        ...existingOnboarding,
+        logo: onboardingData.logo,
+      };
+
+      if (userDoc.exists()) {
+        await updateDoc(userRef, { onboarding: mergedOnboarding });
+      } else {
+        await setDoc(userRef, { onboarding: mergedOnboarding }, { merge: true });
+      }
+      
+      toast.success("Logo selected! It's now your brand logo.");
+    } catch (err) {
+      console.error("Error selecting logo:", err);
+      toast.error("Failed to select logo");
+    }
+  };
+
+  return (
+    <div className="flex h-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-200">
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1">
+        {/* Header */}
+        <div className="bg-white px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Chat with {recipientName}
+          </h2>
+          <p className="text-sm text-gray-500">
+            {conversationDescription}
+          </p>
+          {!activeConversationId && senderType === "user" && (
+            <p className="mt-1 text-xs text-amber-600">
+              Conversation will be created when you send your first message.
+            </p>
+          )}
+        </div>
+
+        {/* Messages and Input Container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Messages Area */}
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -290,7 +459,6 @@ export default function ChatInterface({
             </div>
           ))
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Error Message */}
@@ -391,7 +559,7 @@ export default function ChatInterface({
             }
             className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSending || isUploading ? (
+            {isSending || isUploading || isInitializingConversation ? (
               <FiLoader className="w-5 h-5 animate-spin" />
             ) : (
               <FiSend className="w-5 h-5" />
@@ -399,6 +567,72 @@ export default function ChatInterface({
           </button>
         </div>
       </div>
+        </div>
+      </div>
+
+      {/* Image Sidebar for Logo Chat */}
+      {conversationType === "logo" && (
+        <div className="w-64 bg-white border-l border-gray-200 flex flex-col">
+          <div className="px-4 py-4 border-b border-gray-200">
+            <h3 className="font-semibold text-gray-900">
+              Logo Options ({allImages.length})
+            </h3>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {allImages.length === 0 ? (
+              <div className="text-center py-6 text-gray-500">
+                <p className="text-sm">No images shared yet</p>
+              </div>
+            ) : (
+              allImages.map((img, idx) => (
+                <div key={idx} className="group">
+                  <div className="relative rounded-lg overflow-hidden bg-gray-100 mb-2">
+                    <img
+                      src={img.url}
+                      alt={`Logo option ${idx + 1}`}
+                      className="w-full h-40 object-cover"
+                    />
+                    {selectedLogoImage === img.url && (
+                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                        <FiCheck className="w-6 h-6 text-green-600" />
+                      </div>
+                    )}
+                    {adminRecommendedImages.has(img.url) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-blue-600/90 text-white text-xs py-1 px-2 text-center font-semibold">
+                        ✓ Admin Recommended
+                      </div>
+                    )}
+                    
+                    {/* Action Buttons */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleSelectLogoImage(img.url)}
+                        disabled={senderType !== "user"}
+                        className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                        title={senderType === "user" ? "Select as logo" : "Only users can select"}
+                      >
+                        <FiCheck className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => window.open(img.url, "_blank")}
+                        className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                        title="Download"
+                      >
+                        <FiDownload className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <p className="font-medium">{img.sender}</p>
+                    <p className="text-gray-500">{img.senderType}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

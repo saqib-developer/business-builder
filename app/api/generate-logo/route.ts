@@ -17,9 +17,6 @@ export async function POST(request: NextRequest) {
     // Enhance prompt for logo generation
     const enhancedPrompt = `Professional business logo design, ${prompt}, minimalist, clean design, vector style, high quality, white background, centered composition`;
 
-    console.log("Generating image with prompt:", enhancedPrompt);
-    console.log("API URL:", HUGGINGFACE_API_URL);
-
     const response = await fetch(HUGGINGFACE_API_URL, {
       method: "POST",
       headers: {
@@ -35,11 +32,8 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    console.log("Hugging Face API Response Status:", response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Hugging Face API Error:", errorText);
 
       let errorData;
       try {
@@ -91,8 +85,6 @@ export async function POST(request: NextRequest) {
 
     // Get image blob
     const imageBlob = await response.blob();
-    console.log("Successfully generated image, size:", imageBlob.size);
-
     // Return the image as a response
     return new NextResponse(imageBlob, {
       status: 200,
@@ -101,8 +93,7 @@ export async function POST(request: NextRequest) {
         "Cache-Control": "no-cache",
       },
     });
-  } catch (error) {
-    console.error("Error generating logo:", error);
+  } catch {
     return NextResponse.json(
       {
         error: "Internal server error while generating image",

@@ -45,7 +45,6 @@ export default function Step3LogoSetup({
     isUploading,
     uploadProgress,
     error: uploadError,
-    reset: resetUpload,
   } = useConvexUpload();
 
   const [selectedOption, setSelectedOption] = useState<
@@ -57,9 +56,6 @@ export default function Step3LogoSetup({
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(
     initialValue?.url,
   );
-  const [uploadedStorageId, setUploadedStorageId] = useState<
-    string | undefined
-  >(initialValue?.convexStorageId);
 
   // AI Generation state
   const [aiPrompt, setAiPrompt] = useState<string>(
@@ -74,11 +70,27 @@ export default function Step3LogoSetup({
   const [remainingGenerations, setRemainingGenerations] = useState<number>(10);
 
   // Custom design state
-  const [customDesignAccepted, setCustomDesignAccepted] = useState(false);
+  const [customDesignAccepted, setCustomDesignAccepted] = useState(
+    initialValue?.type === "custom",
+  );
 
   // General state
   const [isSaving, setIsSaving] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const hasExistingUploadedLogo =
+    initialValue?.type === "upload" && Boolean(initialValue.url);
+  const hasExistingAiLogo =
+    initialValue?.type === "ai-generated" && Boolean(initialValue.url);
+  const hasExistingCustomRequest =
+    initialValue?.type === "custom" && Boolean(initialValue.customDesignRequestId);
+
+  const getErrorMessage = (error: unknown, fallbackMessage: string) => {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return fallbackMessage;
+  };
 
   // Check AI generation limit on mount
   useEffect(() => {
@@ -115,8 +127,8 @@ export default function Step3LogoSetup({
     try {
       const result = await uploadFile(uploadedFile, user.id, "logo");
       return { url: result.url || "", storageId: result.storageId };
-    } catch (err: any) {
-      setGeneralError(err.message || "Failed to upload logo");
+    } catch (err: unknown) {
+      setGeneralError(getErrorMessage(err, "Failed to upload logo"));
       return null;
     }
   };
@@ -157,8 +169,8 @@ export default function Step3LogoSetup({
       }
 
       toast.success("Logo generated successfully!");
-    } catch (err: any) {
-      setAiError(err.message || "Failed to generate logo");
+    } catch (err: unknown) {
+      setAiError(getErrorMessage(err, "Failed to generate logo"));
     } finally {
       setIsGenerating(false);
     }
@@ -178,91 +190,127 @@ export default function Step3LogoSetup({
     try {
       let logoData: LogoSetup;
 
-      if (selectedOption === "upload" && uploadedFile) {
-        // Upload to Convex
-        const uploadResult = await handleUploadToConvex();
-        if (!uploadResult) {
+      if (selectedOption === "upload") {
+        if (uploadedFile) {
+          // Upload to Convex
+          const uploadResult = await handleUploadToConvex();
+          if (!uploadResult) {
+            setIsSaving(false);
+            return;
+          }
+
+          // Save to Firestore
+          await saveLogoData(user.id, {
+            type: "upload",
+            url: uploadResult.url,
+            fileName: uploadedFile.name,
+            convexStorageId: uploadResult.storageId,
+          });
+
+          logoData = {
+            type: "upload",
+            url: uploadResult.url,
+            fileName: uploadedFile.name,
+            convexStorageId: uploadResult.storageId,
+          };
+
+          toast.success("Logo uploaded successfully!");
+        } else if (hasExistingUploadedLogo) {
+          logoData = {
+            type: "upload",
+            url: initialValue?.url,
+            fileName: initialValue?.fileName,
+            convexStorageId: initialValue?.convexStorageId,
+          };
+        } else {
+          setGeneralError("Please upload a logo file");
           setIsSaving(false);
           return;
         }
-
-        // Save to Firestore
-        await saveLogoData(user.id, {
-          type: "upload",
-          url: uploadResult.url,
-          fileName: uploadedFile.name,
-          convexStorageId: uploadResult.storageId,
-        });
-
-        logoData = {
-          type: "upload",
-          url: uploadResult.url,
-          fileName: uploadedFile.name,
-          convexStorageId: uploadResult.storageId,
-        };
-
-        toast.success("Logo uploaded successfully!");
-      } else if (
-        selectedOption === "ai-generated" &&
-        selectedAiImage !== null
-      ) {
-        // Upload AI generated image to Convex
-        const selectedImage = aiGeneratedImages[selectedAiImage];
-        const file = createImageFile(
-          selectedImage.blob,
-          `ai-logo-${Date.now()}.png`,
-        );
-
-        const result = await uploadFile(file, user.id, "logo");
-
-        // Save to Firestore
-        await saveLogoData(user.id, {
-          type: "ai-generated",
-          url: result.url || "",
-          aiPrompt,
-          convexStorageId: result.storageId,
-        });
-
-        logoData = {
-          type: "ai-generated",
-          url: result.url || "",
-          aiPrompt,
-          convexStorageId: result.storageId,
-        };
-
-        toast.success("AI-generated logo saved successfully!");
-      } else if (selectedOption === "custom" && customDesignAccepted) {
-        // Create custom design request
-        const requestId = await createCustomDesignRequest(
-          user.id,
-          user.email || "",
-          `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-            user.email ||
-            "User",
-        );
-
-        // Save to Firestore
-        await saveLogoData(user.id, {
-          type: "custom",
-          customDesignRequestId: requestId,
-        });
-
-        logoData = {
-          type: "custom",
-          customDesignRequestId: requestId,
-        };
-
-        toast.success("Custom design request submitted!");
       } else {
-        setGeneralError("Please complete your logo selection");
-        setIsSaving(false);
-        return;
+        if (selectedOption === "ai-generated") {
+          if (selectedAiImage !== null) {
+            // Upload AI generated image to Convex
+            const selectedImage = aiGeneratedImages[selectedAiImage];
+            const file = createImageFile(
+              selectedImage.blob,
+              `ai-logo-${Date.now()}.png`,
+            );
+
+            const result = await uploadFile(file, user.id, "logo");
+
+            // Save to Firestore
+            await saveLogoData(user.id, {
+              type: "ai-generated",
+              url: result.url || "",
+              aiPrompt,
+              convexStorageId: result.storageId,
+            });
+
+            logoData = {
+              type: "ai-generated",
+              url: result.url || "",
+              aiPrompt,
+              convexStorageId: result.storageId,
+            };
+
+            toast.success("AI-generated logo saved successfully!");
+          } else if (hasExistingAiLogo) {
+            logoData = {
+              type: "ai-generated",
+              url: initialValue?.url,
+              aiPrompt: aiPrompt || initialValue?.aiPrompt,
+              convexStorageId: initialValue?.convexStorageId,
+            };
+          } else {
+            setGeneralError("Please generate and select a logo");
+            setIsSaving(false);
+            return;
+          }
+        } else if (selectedOption === "custom") {
+          if (hasExistingCustomRequest) {
+            logoData = {
+              type: "custom",
+              customDesignRequestId: initialValue?.customDesignRequestId,
+            };
+          } else if (customDesignAccepted) {
+            // Create custom design request
+            const requestId = await createCustomDesignRequest(
+              user.id,
+              user.email || "",
+              `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                user.email ||
+                "User",
+            );
+
+            // Save to Firestore
+            await saveLogoData(user.id, {
+              type: "custom",
+              customDesignRequestId: requestId,
+            });
+
+            logoData = {
+              type: "custom",
+              customDesignRequestId: requestId,
+            };
+
+            toast.success("Custom design request submitted!");
+          } else {
+            setGeneralError("Please confirm the custom design request");
+            setIsSaving(false);
+            return;
+          }
+        } else {
+          setGeneralError("Please complete your logo selection");
+          setIsSaving(false);
+          return;
+        }
       }
 
       onNext(logoData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving logo:", err);
-      setGeneralError(err.message || "Failed to save logo. Please try again.");
+      setGeneralError(getErrorMessage(err, "Failed to save logo. Please try again."));
       toast.error("Failed to save logo");
     } finally {
       setIsSaving(false);
@@ -271,9 +319,15 @@ export default function Step3LogoSetup({
 
   const canContinue = () => {
     if (!selectedOption) return false;
-    if (selectedOption === "upload") return !!uploadedFile;
-    if (selectedOption === "ai-generated") return selectedAiImage !== null;
-    if (selectedOption === "custom") return customDesignAccepted;
+    if (selectedOption === "upload") {
+      return !!uploadedFile || hasExistingUploadedLogo;
+    }
+    if (selectedOption === "ai-generated") {
+      return selectedAiImage !== null || hasExistingAiLogo;
+    }
+    if (selectedOption === "custom") {
+      return customDesignAccepted || hasExistingCustomRequest;
+    }
     return false;
   };
 
@@ -316,7 +370,7 @@ export default function Step3LogoSetup({
         </h1>
 
         <p className="text-xl text-gray-600">
-          Your logo is the face of your business. Let's make it memorable! 🎨
+          Your logo is the face of your business. Let&apos;s make it memorable.
         </p>
       </div>
 
@@ -382,7 +436,11 @@ export default function Step3LogoSetup({
                     className="max-w-xs max-h-64 object-contain rounded-lg shadow-lg"
                   />
                 </div>
-                <p className="text-gray-600">{uploadedFile?.name}</p>
+                {(uploadedFile?.name || initialValue?.fileName) && (
+                  <p className="text-gray-600">
+                    {uploadedFile?.name || initialValue?.fileName}
+                  </p>
+                )}
                 <label className="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 cursor-pointer transition-all">
                   <FiUpload className="w-5 h-5" />
                   Change Logo
@@ -461,6 +519,19 @@ export default function Step3LogoSetup({
               {remainingGenerations} generations remaining today
             </p>
           </div>
+
+          {hasExistingAiLogo && previewUrl && selectedAiImage === null && (
+            <div className="max-w-xl mx-auto mb-6 rounded-xl border border-purple-200 bg-white p-4">
+              <p className="text-sm font-semibold text-purple-700 mb-3">
+                Current AI logo
+              </p>
+              <img
+                src={previewUrl}
+                alt="Current AI logo"
+                className="mx-auto h-32 w-full max-w-xs object-contain"
+              />
+            </div>
+          )}
 
           {/* Prompt Input */}
           <div className="max-w-xl mx-auto mb-6">
@@ -557,14 +628,25 @@ export default function Step3LogoSetup({
           <div className="text-center">
             <FiMessageCircle className="w-16 h-16 text-pink-600 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              Custom Logo Design 🎨
+              Custom Logo Design
             </h3>
             <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-              Upon completion of these onboarding steps, you'll be connected
+              Upon completion of these onboarding steps, you&apos;ll be connected
               with our design team to discuss your custom logo requirements. You
               can share your ideas, preferences, and inspirations through our
               built-in chat system.
             </p>
+
+            {hasExistingCustomRequest && (
+              <div className="bg-white rounded-xl p-4 max-w-md mx-auto mb-6 text-left border border-pink-200">
+                <p className="text-sm font-semibold text-gray-900">
+                  Active request detected
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Request ID: {initialValue?.customDesignRequestId}
+                </p>
+              </div>
+            )}
 
             <div className="bg-white rounded-xl p-6 max-w-md mx-auto mb-6">
               <h4 className="font-semibold text-gray-900 mb-3">

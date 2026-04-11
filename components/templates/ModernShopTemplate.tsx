@@ -1,185 +1,185 @@
 "use client";
 
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useBrand } from "@/lib/context/BrandContext";
-import TemplateLayout from "@/components/templates/TemplateLayout";
-import {
-  FiArrowRight,
-  FiStar,
-  FiTruck,
-  FiShield,
-  FiRefreshCw,
-} from "react-icons/fi";
-
+import TemplateLayout from "./TemplateLayout";
+import { FiArrowRight, FiMessageCircle } from "react-icons/fi";
 import { TemplateConfig } from "@/lib/types/template";
+import { buildWhatsAppLink } from "@/lib/templateCatalog";
+import { useTemplateProducts } from "@/hooks/useTemplateProducts";
 
-export default function ModernShopTemplate({ config }: { config?: TemplateConfig }) {
+export default function ModernShopTemplate({ config, storeOwnerId, initialPage }: { config?: TemplateConfig; storeOwnerId?: string; initialPage?: "home" | "shop" | "about" }) {
   const { brandSettings } = useBrand();
-  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
-  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
-  const headline = config?.content?.heroHeadline || brandSettings.businessName;
-  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor || "#1D4ED8";
+  const headline = config?.content?.heroHeadline || brandSettings.businessName || "Minimal Studio";
+  const tagline = config?.content?.heroSubheadline || brandSettings.tagline || "Simple products, clear value.";
   const heroImage = config?.content?.heroImage;
+  const whatsappNumber = (config?.content?.whatsappNumber || brandSettings.whatsappNumber || "").replace(/\D/g, "");
 
-  const products = [
-    { id: 1, name: "Premium Product", price: 99.99, rating: 4.5, image: "🎨" },
-    { id: 2, name: "Bestseller Item", price: 79.99, rating: 5.0, image: "✨" },
-    {
-      id: 3,
-      name: "Featured Product",
-      price: 129.99,
-      rating: 4.8,
-      image: "🌟",
-    },
-    { id: 4, name: "Popular Choice", price: 89.99, rating: 4.7, image: "💎" },
-  ];
+  const [search, setSearch] = useState("");
+  const { products, featuredProducts, isLoading, hasProducts } = useTemplateProducts({ userId: storeOwnerId });
 
-  const features = [
-    { icon: <FiTruck />, title: "Free Shipping", desc: "On orders over $50" },
-    { icon: <FiShield />, title: "Secure Payment", desc: "100% protected" },
-    { icon: <FiRefreshCw />, title: "Easy Returns", desc: "30-day guarantee" },
-  ];
+  const filtered = useMemo(
+    () => products.filter((p) => `${p.name} ${p.description}`.toLowerCase().includes(search.toLowerCase())),
+    [products, search],
+  );
 
-  return (
-    <TemplateLayout style="modern" config={config}>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-gray-50 to-gray-100 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                {subheadline}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Discover our curated collection of premium products designed to
-                elevate your lifestyle.
-              </p>
-              <button
-                className="px-8 py-4 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity flex items-center space-x-2"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <span>Shop Now</span>
-                <FiArrowRight />
-              </button>
-            </div>
-            <div className="relative h-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
-              <div className="text-9xl">🛍️</div>
-            </div>
-          </div>
+  const productCard = (product: (typeof products)[number]) => (
+    <article key={product.id} className="border border-gray-200 bg-white p-5 transition-transform hover:-translate-y-1">
+      <Link href={`/shop/${product.id}`} className="block">
+        <div className="h-40 rounded-lg bg-gradient-to-br from-slate-100 via-white to-slate-200 flex items-center justify-center text-5xl mb-4 overflow-hidden">
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-3xl font-semibold text-slate-500">{product.name.charAt(0).toUpperCase()}</span>
+          )}
         </div>
-      </section>
+        <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+        <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+        <p className="text-xl font-bold mt-3" style={{ color: primaryColor }}>{product.price}</p>
+      </Link>
+      <div className="mt-4 flex gap-3">
+        <Link
+          href={`/shop/${product.id}`}
+          className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border border-gray-200 text-gray-900"
+        >
+          View Details
+        </Link>
+        <a
+          href={buildWhatsAppLink(whatsappNumber, product.name)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-white text-sm font-medium ${
+            whatsappNumber ? "" : "opacity-60 pointer-events-none"
+          }`}
+          style={{ backgroundColor: primaryColor }}
+        >
+          <FiMessageCircle />
+          WhatsApp
+        </a>
+      </div>
+    </article>
+  );
 
-      {/* Features */}
-      <section className="py-12 border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-white"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {feature.icon}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{feature.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Products Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Featured Products
-            </h2>
-            <p className="text-xl text-gray-600">
-              Handpicked items just for you
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200"
-              >
-                <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
-                  <div className="text-8xl transform group-hover:scale-110 transition-transform duration-300">
-                    {product.image}
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.floor(product.rating) ? "fill-current" : ""
-                        }`}
-                        style={{ color: "#FCD34D" }}
-                      />
-                    ))}
-                    <span className="text-sm text-gray-600 ml-2">
-                      ({product.rating})
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-2xl font-bold"
-                      style={{ color: primaryColor }}
-                    >
-                      ${product.price}
-                    </span>
-                    <button
-                      className="px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section
-        className="py-16"
-        style={{ backgroundColor: primaryColor + "10" }}
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Join Our Community
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Subscribe to get exclusive offers and updates
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-6 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+  const homePage = (
+    <>
+      <section id="home" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-12 md:grid-cols-2 items-center">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: primaryColor }}>Minimal & Airy</p>
+            <h1 className="text-5xl md:text-6xl font-light text-gray-900 leading-tight">{headline}</h1>
+            <p className="mt-6 text-lg text-gray-600 max-w-xl">{tagline}</p>
             <button
-              className="px-8 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
+              onClick={() => window.scrollTo({ top: 560, behavior: "smooth" })}
+              className="mt-8 inline-flex items-center gap-2 px-6 py-3 text-white"
               style={{ backgroundColor: primaryColor }}
             >
-              Subscribe
+              View Featured
+              <FiArrowRight />
             </button>
+          </div>
+          <div className="h-96 border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center">
+            {heroImage ? (
+              <img src={heroImage} alt={`${headline} hero`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="relative h-full w-full bg-[radial-gradient(circle_at_top_left,_rgba(29,78,216,0.16),_transparent_40%),linear-gradient(135deg,rgba(255,255,255,0.95),rgba(241,245,249,0.9))]">
+                <div className="absolute inset-6 rounded-3xl border border-white/70 bg-white/30 backdrop-blur-sm" />
+                <div className="absolute left-10 top-10 h-28 w-28 rounded-full bg-white/70" />
+                <div className="absolute right-10 bottom-10 h-40 w-40 rounded-[2rem] bg-slate-900/10 rotate-12" />
+              </div>
+            )}
           </div>
         </div>
       </section>
-    </TemplateLayout>
+
+      <section className="py-16 bg-slate-50 border-t border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-light text-gray-900 mb-8">Featured Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              <div className="col-span-full p-8 text-center text-gray-600">Loading featured products...</div>
+            ) : featuredProducts.length > 0 ? featuredProducts.map(productCard) : (
+              <div className="col-span-full border border-gray-200 bg-white p-8 text-center text-gray-600">
+                New products coming soon!
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+
+  const shopPage = (
+    <section id="shop" className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <h2 className="text-3xl font-light text-gray-900">Shop</h2>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products or services..."
+            className="w-full md:w-80 border border-gray-300 px-4 py-2.5 focus:outline-none focus:ring-2"
+            style={{ boxShadow: `0 0 0 0px ${primaryColor}` }}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {isLoading ? (
+            <div className="col-span-full border border-gray-200 bg-slate-50 p-8 text-center text-gray-600">
+              Loading products...
+            </div>
+          ) : filtered.length > 0 ? filtered.map(productCard) : (
+            <div className="col-span-full border border-gray-200 bg-slate-50 p-8 text-center text-gray-600">
+              {hasProducts ? "No matching products found." : "New products coming soon!"}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+
+  const aboutPage = (
+    <section id="about" className="py-16 bg-slate-50">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-light text-gray-900 mb-4">About Us</h2>
+        <p className="text-gray-600 mb-8">
+          We help customers choose the right package quickly with transparent communication and direct WhatsApp support.
+        </p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="bg-white border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
+            <p className="text-sm text-gray-600">Business: {headline}</p>
+            <p className="text-sm text-gray-600 mt-1">Primary contact: WhatsApp</p>
+            <p className="text-sm text-gray-600 mt-1">Response times and service area are shared after launch.</p>
+          </div>
+          <div className="bg-white border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Quick WhatsApp Contact</h3>
+            <a
+              href={buildWhatsAppLink(whatsappNumber, "general inquiry")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-white font-medium ${
+                whatsappNumber ? "" : "opacity-60 pointer-events-none"
+              }`}
+              style={{ backgroundColor: primaryColor }}
+            >
+              <FiMessageCircle />
+              Contact on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+  return (
+    <TemplateLayout
+      style="modern"
+      config={config}
+      homePage={homePage}
+      shopPage={shopPage}
+      aboutPage={aboutPage}
+      initialPage={initialPage}
+    />
   );
 }

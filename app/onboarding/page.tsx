@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { firestore } from "@/lib/firebase/firebase";
+import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
   OnboardingData,
@@ -18,19 +18,44 @@ import Step4SocialMedia from "@/components/onboarding/Step4SocialMedia";
 import Step5WebsiteBuilder from "@/components/onboarding/Step5WebsiteBuilder";
 import { FiCheck } from "react-icons/fi";
 
+function removeUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => removeUndefinedDeep(item))
+      .filter((item) => item !== undefined) as T;
+  }
+
+  if (value && typeof value === "object") {
+    const cleaned = Object.entries(value as Record<string, unknown>).reduce(
+      (acc, [key, entry]) => {
+        if (entry === undefined) {
+          return acc;
+        }
+        acc[key] = removeUndefinedDeep(entry);
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+    return cleaned as T;
+  }
+
+  return value;
+}
+
 // Local helper function as `saveOnboardingData` was not officially exposed previously
 async function saveOnboardingData(userId: string, data: Partial<OnboardingData>) {
   try {
     const userRef = doc(firestore, "users", userId);
     const userDoc = await getDoc(userRef);
+    const sanitizedData = removeUndefinedDeep(data);
 
     if (userDoc.exists()) {
-      await updateDoc(userRef, { onboarding: data });
+      await updateDoc(userRef, { onboarding: sanitizedData });
     } else {
-      await setDoc(userRef, { onboarding: data }, { merge: true });
+      await setDoc(userRef, { onboarding: sanitizedData }, { merge: true });
     }
   } catch (error) {
-    console.error("Error saving onboarding data to Firestore:", error);
+    void error;
   }
 }
 
@@ -38,6 +63,10 @@ function OnboardingContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isDashboardEditMode =
+    searchParams.get("source") === "dashboard" ||
+    searchParams.get("mode") === "edit";
+  const shouldOpenWebsiteCustomizer = searchParams.get("edit") === "true";
   const [currentStep, setCurrentStep] = useState(1);
   const [onboardingData, setOnboardingData] = useState<Partial<OnboardingData>>();
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
@@ -79,7 +108,7 @@ function OnboardingContent() {
           initialStep = lastStep + 1 > 5 ? 5 : lastStep + 1;
         }
       } catch (error) {
-        console.error("Error loading onboarding data:", error);
+        void error;
       }
     } else if (stepParam) {
       // If no saved data but step param exists, go to that step
@@ -124,8 +153,6 @@ function OnboardingContent() {
     return completedSteps;
   };
 
-  const isEditing = currentOnboardingData?.isComplete === true;
-
   const handleSaveAndReturn = () => {
     router.push("/dashboard");
   };
@@ -137,7 +164,7 @@ function OnboardingContent() {
       businessName,
       completedSteps,
     });
-    if (isEditing) {
+    if (isDashboardEditMode) {
       router.push("/dashboard");
     } else {
       setCurrentStep(3);
@@ -151,7 +178,7 @@ function OnboardingContent() {
       logo: logoData,
       completedSteps,
     });
-    if (isEditing) {
+    if (isDashboardEditMode) {
       router.push("/dashboard");
     } else {
       setCurrentStep(4);
@@ -165,7 +192,7 @@ function OnboardingContent() {
       socialMedia: socialData,
       completedSteps,
     });
-    if (isEditing) {
+    if (isDashboardEditMode) {
       router.push("/dashboard");
     } else {
       setCurrentStep(5);
@@ -212,7 +239,7 @@ function OnboardingContent() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       {/* Progress Bar */}
-      {currentStep > 1 && (
+      {!isDashboardEditMode && currentStep > 1 && (
         <div className="max-w-4xl mx-auto mb-8">
           <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
             <div className="flex items-center justify-between mb-2">
@@ -270,8 +297,8 @@ function OnboardingContent() {
           <Step2BusinessName
             initialValue={currentOnboardingData.businessName}
             onNext={handleStep2Complete}
-            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(1)}
-            isEditing={isEditing}
+            onBack={isDashboardEditMode ? handleSaveAndReturn : () => setCurrentStep(1)}
+            isEditing={isDashboardEditMode}
           />
         )}
 
@@ -279,8 +306,8 @@ function OnboardingContent() {
           <Step3LogoSetup
             initialValue={currentOnboardingData.logo}
             onNext={handleStep3Complete}
-            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(2)}
-            isEditing={isEditing}
+            onBack={isDashboardEditMode ? handleSaveAndReturn : () => setCurrentStep(2)}
+            isEditing={isDashboardEditMode}
           />
         )}
 
@@ -288,16 +315,19 @@ function OnboardingContent() {
           <Step4SocialMedia
             initialValue={currentOnboardingData.socialMedia}
             onNext={handleStep4Complete}
-            onBack={isEditing ? handleSaveAndReturn : () => setCurrentStep(3)}
-            isEditing={isEditing}
+            onBack={isDashboardEditMode ? handleSaveAndReturn : () => setCurrentStep(3)}
+            isEditing={isDashboardEditMode}
           />
         )}
 
         {currentStep === 5 && (
           <Step5WebsiteBuilder
             businessName={currentOnboardingData.businessName || "Your Business"}
+            initialData={currentOnboardingData.website}
             onNext={handleStep5Complete}
-            onBack={() => setCurrentStep(4)}
+            onBack={isDashboardEditMode ? handleSaveAndReturn : () => setCurrentStep(4)}
+            isEditing={isDashboardEditMode}
+            openCustomizer={shouldOpenWebsiteCustomizer}
           />
         )}
       </div>

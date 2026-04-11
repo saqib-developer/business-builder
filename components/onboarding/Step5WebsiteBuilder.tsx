@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { FiArrowRight, FiGlobe, FiCheckCircle, FiLock } from "react-icons/fi";
+import { useState } from "react";
+import { FiArrowRight, FiGlobe, FiCheckCircle } from "react-icons/fi";
 import { SiWordpress } from "react-icons/si";
 import { FaCode } from "react-icons/fa";
 import MotivationalQuote from "./MotivationalQuote";
 import { WebsiteSetup } from "@/lib/types/onboarding";
 import { TEMPLATES } from "@/lib/types/template";
-import Image from "next/image";
 import Step5BCustomizer from "./Step5BCustomizer";
+import TemplateMiniPreview from "@/components/templates/TemplateMiniPreview";
 
 interface Step5WebsiteBuilderProps {
   initialData?: WebsiteSetup;
   businessName: string;
   onNext: (websiteData: WebsiteSetup) => void;
   onBack: () => void;
+  isEditing?: boolean;
+  openCustomizer?: boolean;
 }
 
 export default function Step5WebsiteBuilder({
@@ -23,18 +24,42 @@ export default function Step5WebsiteBuilder({
   initialData,
   onNext,
   onBack,
+  isEditing = false,
+  openCustomizer = false,
 }: Step5WebsiteBuilderProps) {
-  const searchParams = useSearchParams();
-  const editMode = searchParams?.get("edit") === "true";
-  const [mode, setMode] = useState<"select" | "customize">(editMode ? "customize" : "select");
-  const [selectedOption, setSelectedOption] = useState<'template' | 'wordpress' | 'custom' | null>(initialData?.type && ['template', 'wordpress', 'custom'].includes(initialData.type) ? initialData.type as any : null);
+  const [mode, setMode] = useState<"select" | "customize">(
+    openCustomizer &&
+      initialData?.type === "template" &&
+      Boolean(initialData?.templateId)
+      ? "customize"
+      : "select",
+  );
+  const [selectedOption, setSelectedOption] = useState<
+    "template" | "wordpress" | "custom" | null
+  >(
+    initialData?.type === "template" ||
+      initialData?.type === "wordpress" ||
+      initialData?.type === "custom"
+      ? initialData.type
+      : null,
+  );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     initialData?.templateId || null
   );
 
   const handleContinue = () => {
     if (selectedOption === "template" && selectedTemplateId) {
-      setMode("customize");
+      // Step flow should only save/change template selection.
+      // Full website editing is launched from dashboard.
+      onNext({
+        type: "template",
+        templateId: selectedTemplateId,
+        config:
+          initialData?.type === "template" &&
+          initialData?.templateId === selectedTemplateId
+            ? initialData?.config
+            : undefined,
+      });
     } else if (selectedOption === "wordpress") {
       onNext({
         type: "wordpress",
@@ -47,14 +72,40 @@ export default function Step5WebsiteBuilder({
   };
 
   if (mode === "customize" && selectedOption === "template" && selectedTemplateId) {
+    const initialTemplateConfig =
+      initialData?.templateId === selectedTemplateId
+        ? {
+            templateId: selectedTemplateId,
+            isPublished: initialData?.config?.isPublished,
+            theme: {
+              primaryColor:
+                initialData?.config?.theme?.primaryColor || "#3B82F6",
+              secondaryColor:
+                initialData?.config?.theme?.secondaryColor || "#10B981",
+            },
+            content: {
+              heroHeadline:
+                initialData?.config?.content?.heroHeadline ||
+                `${businessName} Store`,
+              heroSubheadline:
+                initialData?.config?.content?.heroSubheadline ||
+                "Welcome to our store. Discover amazing products.",
+              heroImage: initialData?.config?.content?.heroImage || "",
+              brandLogo: initialData?.config?.content?.brandLogo,
+              whatsappNumber:
+                initialData?.config?.content?.whatsappNumber || "",
+            },
+          }
+        : undefined;
+
     return (
       <Step5BCustomizer
-          businessName={businessName}
-          templateId={selectedTemplateId}
-          initialConfig={initialData?.templateId === selectedTemplateId ? initialData?.config : undefined}
-          onFinish={onNext}
-          onBack={() => setMode("select")}
-        />
+        businessName={businessName}
+        templateId={selectedTemplateId}
+        initialConfig={initialTemplateConfig}
+        onFinish={onNext}
+        onBack={() => setMode("select")}
+      />
     );
   }
 
@@ -177,7 +228,7 @@ export default function Step5WebsiteBuilder({
                 {/* Template Preview Image */}
                 <div
                   onClick={() => setSelectedTemplateId(template.id)}
-                  className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer overflow-hidden group"
+                  className="relative h-72 bg-gray-100 cursor-pointer overflow-hidden group"
                 >
                   {selectedTemplateId === template.id && (
                     <div className="absolute top-3 right-3 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center z-10 shadow-lg">
@@ -185,51 +236,8 @@ export default function Step5WebsiteBuilder({
                     </div>
                   )}
 
-                  {/* Template Style Visual */}
-                  <div className="absolute inset-0 p-6">
-                    {template.style === "modern" && (
-                      <div className="space-y-3">
-                        <div className="h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg"></div>
-                        <div className="grid grid-cols-3 gap-2 h-24">
-                          <div className="bg-white/80 rounded-lg"></div>
-                          <div className="bg-white/80 rounded-lg"></div>
-                          <div className="bg-white/80 rounded-lg"></div>
-                        </div>
-                        <div className="h-16 bg-white/80 rounded-lg"></div>
-                      </div>
-                    )}
-                    {template.style === "classic" && (
-                      <div className="space-y-3">
-                        <div className="h-6 bg-gray-700 rounded"></div>
-                        <div className="flex gap-2">
-                          <div className="w-1/3 h-32 bg-white/80 rounded"></div>
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-white/80 rounded"></div>
-                            <div className="h-4 bg-white/80 rounded w-2/3"></div>
-                            <div className="h-16 bg-white/80 rounded"></div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {template.style === "minimal" && (
-                      <div className="space-y-4">
-                        <div className="h-4 bg-gray-300 rounded w-1/3 mx-auto"></div>
-                        <div className="h-24 bg-white/90 rounded-lg"></div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="h-12 bg-white/90 rounded"></div>
-                          <div className="h-12 bg-white/90 rounded"></div>
-                        </div>
-                      </div>
-                    )}
-                    {template.style === "bold" && (
-                      <div className="space-y-3">
-                        <div className="h-10 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-lg"></div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="h-28 bg-yellow-400 rounded-lg"></div>
-                          <div className="h-28 bg-red-400 rounded-lg"></div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="pointer-events-none absolute inset-0 bg-white">
+                    <TemplateMiniPreview templateId={template.id} />
                   </div>
 
                   {/* Hover Overlay */}
@@ -297,7 +305,7 @@ export default function Step5WebsiteBuilder({
 
           <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
             <p className="text-sm text-gray-700">
-              <span className="font-bold text-blue-700">✨ Don't worry!</span>{" "}
+              <span className="font-bold text-blue-700">✨ Do not worry.</span>{" "}
               You can customize colors, text, and images after selecting a
               template.
             </p>
@@ -326,7 +334,7 @@ export default function Step5WebsiteBuilder({
               <div className="bg-white rounded-lg p-4 border border-purple-200">
                 <p className="text-sm text-gray-700 mb-2">
                   <span className="font-semibold text-purple-700">
-                    ✨ What's included:
+                    ✨ Includes:
                   </span>
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1 ml-4">
@@ -368,7 +376,7 @@ export default function Step5WebsiteBuilder({
               <div className="bg-white rounded-lg p-4 border border-pink-200">
                 <p className="text-sm text-gray-700 mb-2">
                   <span className="font-semibold text-pink-700">
-                    ✨ What's included:
+                    ✨ Includes:
                   </span>
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1 ml-4">
@@ -401,7 +409,7 @@ export default function Step5WebsiteBuilder({
           onClick={onBack}
           className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all"
         >
-          Back
+          {isEditing ? "Back to Dashboard" : "Back"}
         </button>
         <button
           onClick={handleContinue}
@@ -412,8 +420,17 @@ export default function Step5WebsiteBuilder({
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          Complete Setup
-          <FiCheckCircle className="w-5 h-5" />
+          {selectedOption === "template" && mode === "select" ? (
+            <>
+              Continue
+              <FiArrowRight className="w-5 h-5" />
+            </>
+          ) : (
+            <>
+              {isEditing ? "Save Changes" : "Complete Setup"}
+              <FiCheckCircle className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>

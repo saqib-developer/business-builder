@@ -10,7 +10,7 @@ import {
   useCallback,
 } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase/firebase";
+import { auth } from "@/lib/firebase";
 import { User } from "@/lib/types";
 import { getLocalStorageItem } from "@/hooks/useLocalStorage";
 
@@ -41,9 +41,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await signOut(auth);
-      console.log("User signed out successfully");
     } catch (error) {
-      console.error("Error signing out:", error);
+      void error;
     }
   }, []);
 
@@ -116,42 +115,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log(
-        "Auth state changed:",
-        firebaseUser
-          ? `${firebaseUser.email} (${firebaseUser.displayName})`
-          : "No user signed in"
-      );
-
       if (firebaseUser) {
         try {
-          // Fetch complete user data from localStorage
           const userDataKey = `user_${firebaseUser.uid}`;
           const localUserData = getLocalStorageItem(userDataKey, null);
 
           if (localUserData) {
-            // User data exists in localStorage - use that data
             const userData = convertLocalStorageUser(
               localUserData,
               firebaseUser.uid
             );
 
-            console.log("User loaded from localStorage:", userData.email);
             setUser(userData);
           } else {
-            // User data doesn't exist - create basic user object (fallback for Google sign-ins)
-            console.log("No localStorage data found, using basic user data");
             const basicUser = createBasicUser(firebaseUser);
             setUser(basicUser);
           }
         } catch (error) {
-          console.error("Error fetching user data:", error);
-          // Fallback to basic user object on error
           const basicUser = createBasicUser(firebaseUser);
           setUser(basicUser);
         }
       } else {
-        console.log("User signed out");
         setUser(null);
       }
 

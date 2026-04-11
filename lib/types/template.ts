@@ -7,10 +7,12 @@ export interface BrandSettings {
   primaryColor: string;
   secondaryColor: string;
   selectedTemplateId: string | null;
+  whatsappNumber?: string;
 }
 
 export interface TemplateConfig {
   templateId: string;
+  isPublished?: boolean;
   theme: {
     primaryColor: string;
     secondaryColor: string;
@@ -19,6 +21,8 @@ export interface TemplateConfig {
     heroHeadline: string;
     heroSubheadline: string;
     heroImage?: string;
+    brandLogo?: string;
+    whatsappNumber?: string;
   };
 }
 

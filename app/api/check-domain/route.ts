@@ -189,8 +189,7 @@ export async function POST(request: NextRequest) {
       currency: data?.currency ?? null,
       source: "godaddy",
     });
-  } catch (error) {
-    console.error("Domain lookup error:", error);
+  } catch {
     return NextResponse.json(
       { error: "Internal server error while checking domain availability." },
       { status: 500 },

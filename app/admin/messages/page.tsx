@@ -11,10 +11,13 @@ import {
   FiMessageCircle,
   FiAlertCircle,
   FiLock,
+  FiCheck,
+  FiDownload,
+  FiX,
 } from "react-icons/fi";
 import { Timestamp } from "firebase/firestore";
 import {
-  getAllConversations,
+  subscribeToConversations,
   subscribeToMessages,
   sendMessage,
   markMessagesAsRead,
@@ -34,7 +37,7 @@ const timestampToDate = (timestamp: Timestamp | undefined): Date => {
 };
 
 export default function AdminMessagesPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
@@ -49,9 +52,9 @@ export default function AdminMessagesPage() {
   const [isSending, setIsSending] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [accessError, setAccessError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading } = useConvexUpload();
 
@@ -65,38 +68,26 @@ export default function AdminMessagesPage() {
     }
   }, [user, authLoading, router]);
 
-  // Fetch all conversations
+  // Subscribe to all conversations in realtime
   useEffect(() => {
     if (authLoading || !user) return;
 
-    const fetchConversations = async () => {
-      setIsLoading(true);
-      setAccessError(null);
-      try {
-        const allConversations = await getAllConversations();
-        setConversations(allConversations);
+    setIsLoading(true);
 
-        // Auto-select first conversation if available
-        if (allConversations.length > 0 && !selectedConversation) {
-          setSelectedConversation(allConversations[0]);
-        }
-      } catch (error: any) {
-        console.error("Error fetching conversations:", error);
-        // TEMPORARY: Comment out permission check for testing
-        // if (error.code === 'permission-denied') {
-        //   setAccessError("You don't have permission to access this page. Admin access required.");
-        // } else {
-        toast.error("Failed to load conversations");
-        // }
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const unsubscribe = subscribeToConversations((allConversations) => {
+      setConversations(allConversations);
 
-    fetchConversations();
-    // Refresh conversations every 30 seconds
-    const interval = setInterval(fetchConversations, 30000);
-    return () => clearInterval(interval);
+      // Keep selected conversation in sync with updates/removals.
+      setSelectedConversation((prev) => {
+        if (!allConversations.length) return null;
+        if (!prev?.id) return allConversations[0];
+        return allConversations.find((conv) => conv.id === prev.id) || allConversations[0];
+      });
+
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user, authLoading]);
 
   // Subscribe to messages for selected conversation
@@ -124,9 +115,16 @@ export default function AdminMessagesPage() {
     return () => unsubscribe();
   }, [selectedConversation?.id, user]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change - only scroll the messages container, not the whole page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      setTimeout(() => {
+        messagesContainerRef.current?.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 0);
+    }
   }, [messages]);
 
   const filteredConversations = conversations.filter((conv) => {
@@ -233,7 +231,6 @@ export default function AdminMessagesPage() {
 
       setNewMessage("");
       clearImageSelection();
-      toast.success("Message sent");
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -284,6 +281,60 @@ export default function AdminMessagesPage() {
     {} as Record<string, ChatMessage[]>,
   );
 
+  // Extract unique images from messages (deduplicated by URL)
+  const uniqueImageMap = new Map<string, { url: string; sender: string; senderType: string; timestamp: any }>();
+  messages.forEach((msg) => {
+    if (msg.imageUrl && !uniqueImageMap.has(msg.imageUrl)) {
+      uniqueImageMap.set(msg.imageUrl, {
+        url: msg.imageUrl,
+        sender: msg.senderName,
+        senderType: msg.senderType,
+        timestamp: msg.createdAt,
+      });
+    }
+  });
+  const allImages = Array.from(uniqueImageMap.values());
+
+  // Persist recommendation badges by deriving them from admin recommendation messages.
+  const adminRecommendedImages = new Set(
+    messages
+      .filter(
+        (msg) =>
+          msg.senderType === "admin" &&
+          Boolean(msg.imageUrl) &&
+          Boolean(msg.content) &&
+          msg.content.toLowerCase().includes("recommend"),
+      )
+      .map((msg) => msg.imageUrl as string),
+  );
+
+  const handleRecommendImage = async (imageUrl: string) => {
+    if (!selectedConversation || selectedConversation.conversationType !== "logo" || !selectedConversation.id) {
+      toast.error("Image recommendation is only available for logo chats");
+      return;
+    }
+
+    try {
+      setIsSending(true);
+
+      // Send recommendation message with image
+      await sendMessage(
+        selectedConversation.id,
+        user?.id || "admin",
+        "admin",
+        "Admin",
+        `I recommend this image for your brand logo! 🎨`,
+        imageUrl,
+      );
+      toast.success("Recommendation sent!");
+    } catch (err: any) {
+      console.error("Error recommending image:", err);
+      toast.error("Failed to send recommendation");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   // Show loading state
   if (authLoading || isLoading) {
     return (
@@ -296,32 +347,32 @@ export default function AdminMessagesPage() {
     );
   }
 
-  // TEMPORARY: Comment out access denied check for testing
-  // Show access denied error
-  // if (accessError) {
-  //   return (
-  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-  //       <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center border border-red-200 shadow-sm">
-  //         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-  //           <FiLock className="w-8 h-8 text-red-600" />
-  //         </div>
-  //         <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-  //         <p className="text-gray-600 mb-6">{accessError}</p>
-  //         <div className="space-y-3">
-  //           <p className="text-sm text-gray-500">
-  //             To access the admin panel, you need to have the admin role set in Firestore.
-  //           </p>
-  //           <Link
-  //             href="/dashboard"
-  //             className="block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-  //           >
-  //             Go to Dashboard
-  //           </Link>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center border border-red-200 shadow-sm">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FiLock className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You do not have permission to view customer messages.
+          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500">
+              Ask an administrator to grant you access in Firestore.
+            </p>
+            <Link
+              href="/dashboard"
+              className="block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -461,7 +512,7 @@ export default function AdminMessagesPage() {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="bg-white border-b border-gray-200 p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
                   {getInitials(selectedConversation.userName)}
@@ -480,8 +531,12 @@ export default function AdminMessagesPage() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
+            {/* Messages and Sidebar Container */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Main Chat Area */}
+              <div className="flex-1 flex flex-col">
+                {/* Messages */}
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
               {Object.keys(groupedMessages).length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <p>No messages yet</p>
@@ -568,7 +623,6 @@ export default function AdminMessagesPage() {
                   </div>
                 ))
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Image Preview */}
@@ -638,6 +692,67 @@ export default function AdminMessagesPage() {
                   Send
                 </button>
               </div>
+            </div>
+              </div>
+
+              {/* Image Sidebar for Logo Chat */}
+              {selectedConversation.conversationType === "logo" && (
+                <div className="w-64 bg-white border-l border-gray-200 flex flex-col">
+                  <div className="px-4 py-4 border-b border-gray-200">
+                    <h3 className="font-semibold text-gray-900">
+                      Logo Options ({allImages.length})
+                    </h3>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {allImages.length === 0 ? (
+                      <div className="text-center py-6 text-gray-500">
+                        <p className="text-sm">No images shared yet</p>
+                      </div>
+                    ) : (
+                      allImages.map((img, idx) => (
+                        <div key={idx} className="group">
+                          <div className="relative rounded-lg overflow-hidden bg-gray-100 mb-2">
+                            <img
+                              src={img.url}
+                              alt={`Logo option ${idx + 1}`}
+                              className="w-full h-40 object-cover"
+                            />
+                            {adminRecommendedImages.has(img.url) && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-green-600/90 text-white text-xs py-1 px-2 text-center font-semibold">
+                                ✓ Recommended
+                              </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleRecommendImage(img.url)}
+                                disabled={isSending}
+                                className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                                title="Recommend this image"
+                              >
+                                <FiCheck className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => window.open(img.url, "_blank")}
+                                className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                                title="Download"
+                              >
+                                <FiDownload className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-600 space-y-1">
+                            <p className="font-medium">{img.sender}</p>
+                            <p className="text-gray-500">{img.senderType}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : (

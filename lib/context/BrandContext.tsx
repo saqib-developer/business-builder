@@ -59,6 +59,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
             ...prev,
             businessName: data.businessName,
             logo: data.logo?.url,
+            whatsappNumber: data.website?.config?.content?.whatsappNumber || prev.whatsappNumber,
             selectedTemplateId: data.website?.templateId || prev.selectedTemplateId,
           }));
         }

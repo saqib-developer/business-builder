@@ -12,3 +12,6 @@ export * from "./template";
 
 // Onboarding and business setup
 export * from "./onboarding";
+
+// Products and inventory
+export * from "./product";

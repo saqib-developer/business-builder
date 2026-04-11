@@ -3,6 +3,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   collection,
   addDoc,
   query,
@@ -349,6 +350,38 @@ export async function getConversationByUserIdAndType(
   return { id: doc.id, ...doc.data() } as Conversation;
 }
 
+export async function initializeConversationIfNeeded(params: {
+  userId: string;
+  userEmail: string;
+  userName: string;
+  conversationType: "logo" | "wordpress" | "custom-code";
+  customDesignRequestId?: string;
+}): Promise<Conversation> {
+  const existing = await getConversationByUserIdAndType(
+    params.userId,
+    params.conversationType,
+  );
+
+  if (existing?.id) {
+    return existing;
+  }
+
+  const newConversationId = await createConversation(
+    params.userId,
+    params.userEmail,
+    params.userName,
+    params.conversationType,
+    params.customDesignRequestId,
+  );
+
+  const created = await getDoc(doc(firestore, "conversations", newConversationId));
+  if (!created.exists()) {
+    throw new Error("Failed to initialize conversation");
+  }
+
+  return { id: created.id, ...created.data() } as Conversation;
+}
+
 export async function getAllConversations(): Promise<Conversation[]> {
   const conversationsRef = collection(firestore, "conversations");
   const q = query(conversationsRef, orderBy("updatedAt", "desc"));
@@ -358,6 +391,21 @@ export async function getAllConversations(): Promise<Conversation[]> {
     id: doc.id,
     ...doc.data(),
   })) as Conversation[];
+}
+
+export function subscribeToConversations(
+  callback: (conversations: Conversation[]) => void,
+): () => void {
+  const conversationsRef = collection(firestore, "conversations");
+  const q = query(conversationsRef, orderBy("updatedAt", "desc"));
+
+  return onSnapshot(q, (snapshot) => {
+    const conversations = snapshot.docs.map((convDoc) => ({
+      id: convDoc.id,
+      ...convDoc.data(),
+    })) as Conversation[];
+    callback(conversations);
+  });
 }
 
 export async function sendMessage(
@@ -622,4 +670,112 @@ export async function toggleReplyLike(
       });
     }
   }
+}
+
+// ============= PRODUCTS MANAGEMENT =============
+
+export interface Product {
+  id: string;
+  userId: string;
+  name: string;
+  description: string;
+  price: string;
+  imageUrl: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export async function createProduct(
+  userId: string,
+  productData: Omit<Product, "id" | "userId" | "createdAt" | "updatedAt">,
+): Promise<string> {
+  const productsRef = collection(firestore, "userProducts");
+  const docRef = await addDoc(
+    productsRef,
+    cleanUndefinedValues({
+      userId,
+      ...productData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  return docRef.id;
+}
+
+export async function getProduct(productId: string): Promise<Product | null> {
+  const productRef = doc(firestore, "userProducts", productId);
+  const productDoc = await getDoc(productRef);
+
+  if (productDoc.exists()) {
+    return { id: productDoc.id, ...productDoc.data() } as Product;
+  }
+  return null;
+}
+
+export async function getUserProducts(userId: string): Promise<Product[]> {
+  const productsRef = collection(firestore, "userProducts");
+  const q = query(
+    productsRef,
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Product[];
+}
+
+export function subscribeToUserProducts(
+  userId: string,
+  callback: (products: Product[]) => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const productsRef = collection(firestore, "userProducts");
+  const q = query(
+    productsRef,
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc"),
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const products = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Product[];
+      callback(products);
+    },
+    (error) => {
+      if (onError) {
+        onError(error as Error);
+      }
+    },
+  );
+}
+
+export async function updateProduct(
+  productId: string,
+  productData: Partial<Omit<Product, "id" | "userId" | "createdAt" | "updatedAt">>,
+): Promise<void> {
+  const productRef = doc(firestore, "userProducts", productId);
+  await updateDoc(
+    productRef,
+    cleanUndefinedValues({
+      ...productData,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  const productRef = doc(firestore, "userProducts", productId);
+  await deleteDoc(productRef);
+}
+
+export async function permanentlyDeleteProduct(productId: string): Promise<void> {
+  const productRef = doc(firestore, "userProducts", productId);
+  await deleteDoc(productRef);
 }

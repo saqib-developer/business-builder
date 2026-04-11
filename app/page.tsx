@@ -1,8 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import ModernShopTemplate from "@/components/templates/ModernShopTemplate";
+import ClassicStoreTemplate from "@/components/templates/ClassicStoreTemplate";
+import MinimalBoutiqueTemplate from "@/components/templates/MinimalBoutiqueTemplate";
+import BoldMarketTemplate from "@/components/templates/BoldMarketTemplate";
+import ComingSoonPage from "@/components/storefront/ComingSoonPage";
+import StorefrontNotFoundPage from "@/components/storefront/StorefrontNotFoundPage";
+import { isLikelyStorefrontHost, normalizeDomain, resolveStorefrontByDomain, StorefrontResolution } from "@/lib/storefront";
+import { TemplateConfig } from "@/lib/types/template";
 import {
   FiAward,
   FiShare2,
@@ -17,9 +26,13 @@ import {
 } from "react-icons/fi";
 import { BsFillLightbulbFill } from "react-icons/bs";
 
-export default function Home() {
+function HomeContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [storefrontData, setStorefrontData] = useState<StorefrontResolution | null>(null);
+  const [isStorefrontMode, setIsStorefrontMode] = useState(false);
+  const [isResolvingStorefront, setIsResolvingStorefront] = useState(true);
 
   const handleGetStarted = () => {
     if (user) {
@@ -28,6 +41,131 @@ export default function Home() {
       router.push("/sign-up");
     }
   };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadStorefront = async () => {
+      const forcedDomain = normalizeDomain(searchParams.get("domain") || "");
+      const host = typeof window !== "undefined" ? normalizeDomain(window.location.hostname) : "";
+      const lookupDomain = forcedDomain || host;
+
+      if (!lookupDomain) {
+        if (!isCancelled) {
+          setIsStorefrontMode(false);
+          setStorefrontData(null);
+          setIsResolvingStorefront(false);
+        }
+        return;
+      }
+
+      const shouldResolveStorefront = Boolean(forcedDomain) || isLikelyStorefrontHost(lookupDomain);
+      if (!shouldResolveStorefront) {
+        if (!isCancelled) {
+          setIsStorefrontMode(false);
+          setStorefrontData(null);
+          setIsResolvingStorefront(false);
+        }
+        return;
+      }
+
+      if (!isCancelled) {
+        setIsStorefrontMode(true);
+        setIsResolvingStorefront(true);
+      }
+
+      try {
+        const resolved = await resolveStorefrontByDomain(lookupDomain);
+        if (!isCancelled) {
+          setStorefrontData(resolved);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setStorefrontData(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsResolvingStorefront(false);
+        }
+      }
+    };
+
+    loadStorefront();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [searchParams]);
+
+  const ownerPreviewRequested = searchParams.get("ownerPreview") === "1";
+  const ownerOverride = Boolean(ownerPreviewRequested && user?.id && storefrontData?.userId === user.id);
+  const requestedView = searchParams.get("view");
+  const initialStorefrontPage =
+    requestedView === "shop" || requestedView === "about" || requestedView === "home"
+      ? requestedView
+      : "home";
+
+  const storefrontConfig = useMemo<TemplateConfig | undefined>(() => {
+    if (!storefrontData) {
+      return undefined;
+    }
+
+    const config = storefrontData.websiteConfig || {};
+    return {
+      templateId: storefrontData.templateId,
+      theme: {
+        primaryColor: config?.theme?.primaryColor || "#2563EB",
+        secondaryColor: config?.theme?.secondaryColor || "#64748B",
+      },
+      content: {
+        heroHeadline: config?.content?.heroHeadline || storefrontData.businessName,
+        heroSubheadline: config?.content?.heroSubheadline || "Welcome to our store.",
+        heroImage: config?.content?.heroImage || "",
+        brandLogo: storefrontData.logoUrl || config?.content?.brandLogo || "",
+        whatsappNumber: config?.content?.whatsappNumber || "",
+      },
+    };
+  }, [storefrontData]);
+
+  if (isStorefrontMode) {
+    if (isResolvingStorefront) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <p className="mt-3 text-sm text-slate-600">Loading storefront...</p>
+          </div>
+        </main>
+      );
+    }
+
+    // State A: subdomain does not exist in DB.
+    if (storefrontData === null) {
+      return <StorefrontNotFoundPage />;
+    }
+
+    // State B: tenant exists but is unpublished.
+    if (!storefrontData.isPublished && !ownerOverride) {
+      return (
+        <ComingSoonPage
+          businessName={storefrontData.businessName}
+          logoUrl={storefrontData.logoUrl}
+        />
+      );
+    }
+
+    // State C: tenant exists and is published.
+    switch (storefrontData.templateId) {
+      case "classic-store":
+        return <ClassicStoreTemplate config={storefrontConfig} storeOwnerId={storefrontData.userId} initialPage={initialStorefrontPage} />;
+      case "minimal-boutique":
+        return <MinimalBoutiqueTemplate config={storefrontConfig} storeOwnerId={storefrontData.userId} initialPage={initialStorefrontPage} />;
+      case "bold-market":
+        return <BoldMarketTemplate config={storefrontConfig} storeOwnerId={storefrontData.userId} initialPage={initialStorefrontPage} />;
+      default:
+        return <ModernShopTemplate config={storefrontConfig} storeOwnerId={storefrontData.userId} initialPage={initialStorefrontPage} />;
+    }
+  }
 
   const heroSteps = [
     {
@@ -361,5 +499,22 @@ export default function Home() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+            <p className="mt-3 text-sm text-slate-600">Loading homepage...</p>
+          </div>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -1,0 +1,202 @@
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { firestore } from "@/lib/firebase";
+
+export interface StorefrontResolution {
+  userId: string;
+  businessName: string;
+  logoUrl: string;
+  isPublished: boolean;
+  templateId: string;
+  websiteConfig: Record<string, any>;
+}
+
+function sanitizeSubdomainPrefix(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
+}
+
+export function normalizeDomain(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/:\d+$/, "")
+    .replace(/\/.*$/, "");
+}
+
+function extractSubdomainPrefix(host: string): string {
+  const normalized = normalizeDomain(host);
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.endsWith(".businessbuilder.com")) {
+    return sanitizeSubdomainPrefix(normalized.replace(/\.businessbuilder\.com$/, ""));
+  }
+
+  if (normalized.endsWith(".localhost")) {
+    return sanitizeSubdomainPrefix(normalized.replace(/\.localhost$/, ""));
+  }
+
+  if (normalized.endsWith(".lvh.me")) {
+    return sanitizeSubdomainPrefix(normalized.replace(/\.lvh\.me$/, ""));
+  }
+
+  if (normalized.endsWith(".vercel.app")) {
+    return sanitizeSubdomainPrefix(normalized.replace(/\.vercel\.app$/, ""));
+  }
+
+  return sanitizeSubdomainPrefix(normalized.split(".")[0] || "");
+}
+
+export function isLikelyStorefrontHost(hostname: string): boolean {
+  const host = normalizeDomain(hostname);
+  if (!host) {
+    return false;
+  }
+
+  const appRoot = "businessbuilder.com";
+  if (host === "localhost" || host === "127.0.0.1") {
+    return false;
+  }
+
+  if (host === appRoot || host === `www.${appRoot}`) {
+    return false;
+  }
+
+  if (host.endsWith(".localhost") || host.endsWith(".lvh.me") || host.endsWith(".vercel.app")) {
+    return true;
+  }
+
+  if (host.endsWith(`.${appRoot}`)) {
+    return true;
+  }
+
+  return true;
+}
+
+function mapUserDocToStorefront(userId: string, rawData: any): StorefrontResolution {
+  const onboarding = rawData?.onboarding || {};
+  const website = onboarding?.website || {};
+  const websiteConfig = website?.config || {};
+
+  return {
+    userId,
+    businessName: onboarding?.businessName || "Your Business",
+    logoUrl: onboarding?.logo?.url || websiteConfig?.content?.brandLogo || "",
+    isPublished: Boolean(websiteConfig?.isPublished),
+    templateId: website?.templateId || websiteConfig?.templateId || "modern-shop",
+    websiteConfig,
+  };
+}
+
+export function getPrimaryLiveDomain(hosting: any): string {
+  if (!hosting) {
+    return "";
+  }
+
+  if (hosting.method === "custom-domain" && hosting.customDomain) {
+    return normalizeDomain(hosting.customDomain);
+  }
+
+  const free = hosting.activeFreeSubdomain || hosting.freeSubdomains?.[0] || "";
+  if (free) {
+    return normalizeDomain(free);
+  }
+
+  if (hosting.freeSubdomain) {
+    return `${sanitizeSubdomainPrefix(hosting.freeSubdomain)}.businessbuilder.com`;
+  }
+
+  return "";
+}
+
+export async function resolveStorefrontByDomain(domain: string): Promise<StorefrontResolution | null> {
+  const normalizedDomain = normalizeDomain(domain);
+  if (!normalizedDomain) {
+    return null;
+  }
+
+  const usersRef = collection(firestore, "users");
+  const subdomainPrefix = extractSubdomainPrefix(normalizedDomain);
+  const canonicalFreeDomain = subdomainPrefix ? `${subdomainPrefix}.businessbuilder.com` : "";
+
+  const exactCustomDomainQuery = query(
+    usersRef,
+    where("onboarding.website.config.hosting.customDomain", "==", normalizedDomain),
+    limit(1),
+  );
+  const exactCustomDomainSnapshot = await getDocs(exactCustomDomainQuery);
+  if (!exactCustomDomainSnapshot.empty) {
+    const docSnap = exactCustomDomainSnapshot.docs[0];
+    return mapUserDocToStorefront(docSnap.id, docSnap.data());
+  }
+
+  const exactFreeSubdomainQuery = query(
+    usersRef,
+    where("onboarding.website.config.hosting.freeSubdomains", "array-contains", normalizedDomain),
+    limit(1),
+  );
+  const exactFreeSubdomainSnapshot = await getDocs(exactFreeSubdomainQuery);
+  if (!exactFreeSubdomainSnapshot.empty) {
+    const docSnap = exactFreeSubdomainSnapshot.docs[0];
+    return mapUserDocToStorefront(docSnap.id, docSnap.data());
+  }
+
+  if (canonicalFreeDomain) {
+    const canonicalFreeSubdomainQuery = query(
+      usersRef,
+      where("onboarding.website.config.hosting.freeSubdomains", "array-contains", canonicalFreeDomain),
+      limit(1),
+    );
+    const canonicalFreeSubdomainSnapshot = await getDocs(canonicalFreeSubdomainQuery);
+    if (!canonicalFreeSubdomainSnapshot.empty) {
+      const docSnap = canonicalFreeSubdomainSnapshot.docs[0];
+      return mapUserDocToStorefront(docSnap.id, docSnap.data());
+    }
+  }
+
+  if (subdomainPrefix) {
+    const legacyQuery = query(
+      usersRef,
+      where("onboarding.website.config.hosting.freeSubdomain", "==", subdomainPrefix),
+      limit(1),
+    );
+    const legacySnapshot = await getDocs(legacyQuery);
+    if (!legacySnapshot.empty) {
+      const docSnap = legacySnapshot.docs[0];
+      return mapUserDocToStorefront(docSnap.id, docSnap.data());
+    }
+
+    const customCanonicalQuery = query(
+      usersRef,
+      where("onboarding.website.config.hosting.customDomain", "==", canonicalFreeDomain),
+      limit(1),
+    );
+    const customCanonicalSnapshot = await getDocs(customCanonicalQuery);
+    if (!customCanonicalSnapshot.empty) {
+      const docSnap = customCanonicalSnapshot.docs[0];
+      return mapUserDocToStorefront(docSnap.id, docSnap.data());
+    }
+  }
+
+  const legacyPrefix = normalizedDomain.endsWith(".businessbuilder.com")
+    ? normalizedDomain.replace(/\.businessbuilder\.com$/, "")
+    : "";
+  if (!legacyPrefix) {
+    return null;
+  }
+
+  const fallbackLegacyQuery = query(
+    usersRef,
+    where("onboarding.website.config.hosting.freeSubdomain", "==", legacyPrefix),
+    limit(1),
+  );
+  const fallbackLegacySnapshot = await getDocs(fallbackLegacyQuery);
+  if (fallbackLegacySnapshot.empty) {
+    return null;
+  }
+
+  const docSnap = fallbackLegacySnapshot.docs[0];
+  return mapUserDocToStorefront(docSnap.id, docSnap.data());
+}

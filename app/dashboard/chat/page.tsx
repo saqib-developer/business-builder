@@ -13,7 +13,6 @@ import { useAuth } from "@/lib/context/AuthContext";
 import {
   getCustomDesignRequest,
   getConversationByUserIdAndType,
-  createConversation,
   CustomDesignRequest,
   Conversation,
 } from "@/lib/firebase/firestoreService";
@@ -133,29 +132,10 @@ function UserChatPageContent() {
       }
 
       // Check if conversation exists for this type
-      let conv = await getConversationByUserIdAndType(
+      const conv = await getConversationByUserIdAndType(
         user.id,
         conversationType,
       );
-
-      if (!conv) {
-        // Create new conversation
-        const customDesignRequestId =
-          conversationType === "logo" && customDesignRequest?.id
-            ? customDesignRequest.id
-            : undefined;
-
-        const conversationId = await createConversation(
-          user.id,
-          user.email || "",
-          `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-            user.email ||
-            "User",
-          conversationType,
-          customDesignRequestId,
-        );
-        conv = await getConversationByUserIdAndType(user.id, conversationType);
-      }
 
       setConversation(conv);
     } catch (err: any) {
@@ -193,6 +173,10 @@ function UserChatPageContent() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   const config = chatConfigs[conversationType];
@@ -257,14 +241,44 @@ function UserChatPageContent() {
               conversationId={conversation.id}
               senderType="user"
               recipientName={config.recipientName}
+              conversationDescription={config.subtitle}
+              conversationType={conversationType}
+              lazyInitContext={{
+                userId: user.id,
+                userEmail: user.email || "",
+                userName:
+                  `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                  user.email ||
+                  "User",
+                conversationType,
+                customDesignRequestId:
+                  conversationType === "logo"
+                    ? customDesignRequest?.id
+                    : undefined,
+              }}
+              onConversationInitialized={(initialized) => setConversation(initialized)}
             />
           ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <FiLoader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-                <p className="text-gray-600">Setting up your chat...</p>
-              </div>
-            </div>
+            <ChatInterface
+              senderType="user"
+              recipientName={config.recipientName}
+              conversationDescription={config.subtitle}
+              conversationType={conversationType}
+              lazyInitContext={{
+                userId: user.id,
+                userEmail: user.email || "",
+                userName:
+                  `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                  user.email ||
+                  "User",
+                conversationType,
+                customDesignRequestId:
+                  conversationType === "logo"
+                    ? customDesignRequest?.id
+                    : undefined,
+              }}
+              onConversationInitialized={(initialized) => setConversation(initialized)}
+            />
           )}
         </div>
       </div>

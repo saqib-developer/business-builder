@@ -37,8 +37,21 @@ export interface SocialPlatform {
 export interface WebsiteSetup {
   type: "template" | "wordpress" | "custom" | null;
   templateId?: string;
-  config?: any; // Add config property
+  config?: WebsiteConfig;
   customizations?: TemplateCustomizations;
+}
+
+export interface WebsiteConfig {
+  templateId?: string;
+  isPublished?: boolean;
+  hosting?: any;
+  theme?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
+  content?: {
+    [key: string]: any;
+  };
 }
 
 export interface TemplateCustomizations {

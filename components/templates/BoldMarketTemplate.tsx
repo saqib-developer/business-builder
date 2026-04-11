@@ -1,281 +1,180 @@
 "use client";
 
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useBrand } from "@/lib/context/BrandContext";
-import TemplateLayout from "@/components/templates/TemplateLayout";
-import { FiZap, FiTrendingUp, FiAward } from "react-icons/fi";
-
+import TemplateLayout from "./TemplateLayout";
+import { FiBriefcase, FiMessageCircle } from "react-icons/fi";
 import { TemplateConfig } from "@/lib/types/template";
+import { buildWhatsAppLink } from "@/lib/templateCatalog";
+import { useTemplateProducts } from "@/hooks/useTemplateProducts";
 
-export default function BoldMarketTemplate({ config }: { config?: TemplateConfig }) {
+export default function BoldMarketTemplate({ config, storeOwnerId, initialPage }: { config?: TemplateConfig; storeOwnerId?: string; initialPage?: "home" | "shop" | "about" }) {
   const { brandSettings } = useBrand();
-  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor;
-  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor;
-  const headline = config?.content?.heroHeadline || brandSettings.businessName;
-  const subheadline = config?.content?.heroSubheadline || brandSettings.tagline;
+  const primaryColor = config?.theme?.primaryColor || brandSettings.primaryColor || "#0F172A";
+  const secondaryColor = config?.theme?.secondaryColor || brandSettings.secondaryColor || "#334155";
+  const headline = config?.content?.heroHeadline || brandSettings.businessName || "Corporate Solutions";
+  const tagline = config?.content?.heroSubheadline || brandSettings.tagline || "Structured services with clear delivery outcomes.";
   const heroImage = config?.content?.heroImage;
+  const whatsappNumber = (config?.content?.whatsappNumber || brandSettings.whatsappNumber || "").replace(/\D/g, "");
 
-  const deals = [
-    {
-      title: "MEGA DEAL",
-      discount: "50% OFF",
-      desc: "Limited Time",
-      image: "🔥",
-    },
-    {
-      title: "FLASH SALE",
-      discount: "40% OFF",
-      desc: "Today Only",
-      image: "⚡",
-    },
-    {
-      title: "SUPER SAVE",
-      discount: "30% OFF",
-      desc: "This Week",
-      image: "💰",
-    },
-  ];
+  const [search, setSearch] = useState("");
+  const { products, featuredProducts, isLoading, hasProducts } = useTemplateProducts({ userId: storeOwnerId });
 
-  const products = [
-    {
-      id: 1,
-      name: "Power Product",
-      price: 79.99,
-      oldPrice: 99.99,
-      badge: "HOT",
-      image: "💪",
-    },
-    {
-      id: 2,
-      name: "Mega Item",
-      price: 89.99,
-      oldPrice: 119.99,
-      badge: "SALE",
-      image: "🚀",
-    },
-    {
-      id: 3,
-      name: "Super Choice",
-      price: 69.99,
-      oldPrice: 89.99,
-      badge: "NEW",
-      image: "⭐",
-    },
-    {
-      id: 4,
-      name: "Ultimate Pick",
-      price: 99.99,
-      oldPrice: 139.99,
-      badge: "HOT",
-      image: "🎯",
-    },
-    {
-      id: 5,
-      name: "Epic Deal",
-      price: 59.99,
-      oldPrice: 79.99,
-      badge: "SALE",
-      image: "💎",
-    },
-    {
-      id: 6,
-      name: "Prime Product",
-      price: 109.99,
-      oldPrice: 149.99,
-      badge: "NEW",
-      image: "👑",
-    },
-  ];
+  const filtered = useMemo(
+    () => products.filter((p) => `${p.name} ${p.description}`.toLowerCase().includes(search.toLowerCase())),
+    [products, search],
+  );
 
-  const features = [
-    { icon: <FiZap />, title: "Lightning Fast", desc: "Quick Delivery" },
-    { icon: <FiTrendingUp />, title: "Best Prices", desc: "Guaranteed" },
-    { icon: <FiAward />, title: "Top Quality", desc: "Premium Products" },
-  ];
+  const card = (item: (typeof products)[number]) => (
+    <article key={item.id} className="border border-slate-300 bg-white p-5 shadow-sm transition-transform hover:-translate-y-1">
+      <Link href={`/shop/${item.id}`} className="block">
+        <div className="h-36 border border-slate-200 bg-slate-50 flex items-center justify-center text-5xl mb-4 overflow-hidden">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-3xl font-semibold text-slate-500">{item.name.charAt(0).toUpperCase()}</span>
+          )}
+        </div>
+        <h3 className="text-lg font-semibold text-slate-900">{item.name}</h3>
+        <p className="text-sm text-slate-600 mt-1">{item.description}</p>
+        <p className="text-xl font-bold mt-3" style={{ color: primaryColor }}>{item.price}</p>
+      </Link>
+      <div className="mt-4 flex gap-3">
+        <Link
+          href={`/shop/${item.id}`}
+          className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold border border-slate-300 text-slate-900"
+        >
+          View Details
+        </Link>
+        <a
+          href={buildWhatsAppLink(whatsappNumber, item.name)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white ${
+            whatsappNumber ? "" : "opacity-60 pointer-events-none"
+          }`}
+          style={{ backgroundColor: primaryColor }}
+        >
+          <FiMessageCircle />
+          WhatsApp
+        </a>
+      </div>
+    </article>
+  );
+
+  const homePage = (
+    <>
+      <section id="home" className="py-16 bg-slate-100 border-b border-slate-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 md:grid-cols-2 items-center">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] mb-3 font-semibold" style={{ color: secondaryColor }}>
+              Structured Corporate
+            </p>
+            <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 leading-tight">{headline}</h1>
+            <p className="mt-5 text-lg text-slate-700 max-w-xl">{tagline}</p>
+          </div>
+          <div className="h-72 border border-slate-300 bg-white overflow-hidden flex items-center justify-center">
+            {heroImage ? (
+              <img src={heroImage} alt={`${headline} hero`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="relative h-full w-full bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.14),_transparent_38%),linear-gradient(135deg,#e2e8f0,#f8fafc)]">
+                <div className="absolute inset-6 border border-slate-300 bg-white/35" />
+                <div className="absolute left-10 top-10 h-24 w-24 rounded-full bg-slate-900/10" />
+                <div className="absolute right-10 bottom-10 h-32 w-32 rounded-[2rem] bg-slate-600/10 rotate-12" />
+                <FiBriefcase className="absolute inset-0 m-auto h-12 w-12 text-slate-500" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-14 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-semibold text-slate-900 mb-8">Featured Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isLoading ? (
+              <div className="col-span-full border border-slate-300 bg-slate-50 p-8 text-center text-slate-600">
+                Loading featured products...
+              </div>
+            ) : featuredProducts.length > 0 ? featuredProducts.map(card) : (
+              <div className="col-span-full border border-slate-300 bg-slate-50 p-8 text-center text-slate-600">
+                New products coming soon!
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+
+  const shopPage = (
+    <section id="shop" className="py-16 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <h2 className="text-3xl font-semibold text-slate-900">Shop</h2>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products or services..."
+            className="w-full md:w-80 border border-slate-300 bg-white px-4 py-2.5"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {isLoading ? (
+            <div className="col-span-full border border-slate-300 bg-white p-8 text-center text-slate-600">
+              Loading products...
+            </div>
+          ) : filtered.length > 0 ? filtered.map(card) : (
+            <div className="col-span-full border border-slate-300 bg-white p-8 text-center text-slate-600">
+              {hasProducts ? "No matching products found." : "New products coming soon!"}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+
+  const aboutPage = (
+    <section id="about" className="py-16 bg-white">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-semibold text-slate-900 mb-4">About Us</h2>
+        <p className="text-slate-600 mb-8">We provide structured services with clear communication and direct WhatsApp support.</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="border border-slate-300 bg-slate-50 p-6">
+            <h3 className="font-semibold text-slate-900 mb-3">Contact Information</h3>
+            <p className="text-sm text-slate-700">Business: {headline}</p>
+            <p className="text-sm text-slate-700 mt-1">Primary contact: WhatsApp</p>
+            <p className="text-sm text-slate-700 mt-1">Operational details are finalized after launch.</p>
+          </div>
+          <div className="border border-slate-300 bg-slate-50 p-6">
+            <h3 className="font-semibold text-slate-900 mb-3">Quick WhatsApp Contact</h3>
+            <a
+              href={buildWhatsAppLink(whatsappNumber, "general inquiry")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white ${
+                whatsappNumber ? "" : "opacity-60 pointer-events-none"
+              }`}
+              style={{ backgroundColor: primaryColor }}
+            >
+              <FiMessageCircle />
+              Contact on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 
   return (
-    <TemplateLayout style="bold" config={config}>
-      {/* Bold Hero */}
-      <section className="bg-black text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tight">
-              {subheadline.toUpperCase()}
-            </h1>
-            <p
-              className="text-2xl md:text-3xl font-bold mb-8"
-              style={{ color: primaryColor }}
-            >
-              INCREDIBLE DEALS • UNBEATABLE PRICES
-            </p>
-            <button
-              className="px-12 py-5 text-black font-black text-xl hover:scale-105 transition-transform"
-              style={{ backgroundColor: primaryColor }}
-            >
-              SHOP NOW 🔥
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Deals Banner */}
-      <section
-        className="py-12"
-        style={{ backgroundColor: primaryColor }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6">
-            {deals.map((deal, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-xl p-6 text-center shadow-xl"
-              >
-                <div className="text-6xl mb-3">{deal.image}</div>
-                <h3 className="text-2xl font-black text-gray-900 mb-2">
-                  {deal.title}
-                </h3>
-                <div
-                  className="text-4xl font-black mb-2"
-                  style={{ color: primaryColor }}
-                >
-                  {deal.discount}
-                </div>
-                <p className="text-gray-600 font-bold">{deal.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Strip */}
-      <section className="bg-gray-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6 text-center">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-center space-x-3"
-              >
-                <div
-                  className="text-3xl"
-                  style={{ color: primaryColor }}
-                >
-                  {feature.icon}
-                </div>
-                <div className="text-left">
-                  <div className="font-black text-lg">{feature.title}</div>
-                  <div className="text-sm text-gray-400">{feature.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Products Grid - Bold Style */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-5xl font-black text-gray-900 mb-4">
-              🔥 HOT DEALS 🔥
-            </h2>
-            <p className="text-xl font-bold text-gray-600">
-              LIMITED TIME OFFERS • GRAB THEM NOW!
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow border-4 border-transparent hover:border-current"
-                style={{ "--hover-color": primaryColor } as any}
-              >
-                <div className="relative">
-                  <div
-                    className="absolute top-4 left-4 px-4 py-2 font-black text-white text-sm z-10 transform -rotate-3 shadow-lg"
-                    style={{
-                      backgroundColor:
-                        product.badge === "SALE"
-                          ? "#EF4444"
-                          : product.badge === "HOT"
-                          ? "#F59E0B"
-                          : "#10B981",
-                    }}
-                  >
-                    {product.badge}!
-                  </div>
-                  <div className="h-64 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <div className="text-9xl">{product.image}</div>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-black text-gray-900 mb-3">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-end justify-between mb-4">
-                    <div>
-                      <div
-                        className="text-3xl font-black"
-                        style={{ color: primaryColor }}
-                      >
-                        ${product.price}
-                      </div>
-                      <div className="text-lg text-gray-500 line-through font-bold">
-                        ${product.oldPrice}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-black text-red-500">
-                        -
-                        {Math.round(
-                          ((product.oldPrice - product.price) /
-                            product.oldPrice) *
-                            100
-                        )}
-                        %
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    className="w-full py-4 text-white font-black text-lg hover:scale-105 transition-transform rounded-lg shadow-lg"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    ADD TO CART 🛒
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section - Bold */}
-      <section className="bg-black text-white py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-6xl font-black mb-6">
-            DON'T MISS OUT!
-          </h2>
-          <p
-            className="text-2xl font-bold mb-8"
-            style={{ color: primaryColor }}
-          >
-            Join 50,000+ Happy Customers Today
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-6 py-4 rounded-lg text-gray-900 font-bold text-lg border-4 border-white focus:ring-0 outline-none"
-            />
-            <button
-              className="px-10 py-4 rounded-lg font-black text-lg text-black hover:scale-105 transition-transform"
-              style={{ backgroundColor: primaryColor }}
-            >
-              GET DEALS!
-            </button>
-          </div>
-        </div>
-      </section>
-    </TemplateLayout>
+    <TemplateLayout
+      style="bold"
+      config={config}
+      homePage={homePage}
+      shopPage={shopPage}
+      aboutPage={aboutPage}
+      initialPage={initialPage}
+    />
   );
 }

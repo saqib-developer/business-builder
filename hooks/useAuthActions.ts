@@ -10,7 +10,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth } from "@/lib/firebase/firebase";
+import { auth } from "@/lib/firebase";
 import { createUserProfile } from "@/lib/firebase/firestoreService";
 import { useRouter } from "next/navigation";
 import { User } from "@/lib/types";
@@ -71,7 +71,6 @@ export function useAuthActions() {
 
       return { success: true };
     } catch (err: any) {
-      console.error("Login error:", err);
       return {
         success: false,
         error: err.message || "Invalid email or password.",
@@ -121,9 +120,6 @@ export function useAuthActions() {
         };
 
         setLocalStorageItem(userDataKey, userData);
-        console.log("New Google user data saved to localStorage");
-      } else {
-        console.log("Existing Google user found in localStorage");
       }
 
       // Check if user has completed onboarding
@@ -152,7 +148,6 @@ export function useAuthActions() {
 
       return { success: true };
     } catch (err: any) {
-      console.error("Google login error:", err);
       return {
         success: false,
         error: err.message || "Google sign-in failed.",
@@ -238,8 +233,6 @@ export function useAuthActions() {
       };
 
       setLocalStorageItem(`user_${user.uid}`, userData);
-      console.log("New email user data saved to localStorage");
-
       // Save user profile to Firestore
       try {
         await createUserProfile(user.uid, {
@@ -253,9 +246,7 @@ export function useAuthActions() {
           bio: additionalData?.bio,
           dateOfBirth: additionalData?.dateOfBirth,
         });
-        console.log("User profile saved to Firestore");
       } catch (firestoreError) {
-        console.error("Error saving user to Firestore:", firestoreError);
         // Continue even if Firestore save fails
       }
 
@@ -265,7 +256,6 @@ export function useAuthActions() {
 
       return { success: true };
     } catch (err: any) {
-      console.error("Signup error:", err);
       return {
         success: false,
         error: err.message || "An error occurred during sign up.",
@@ -315,8 +305,6 @@ export function useAuthActions() {
         };
 
         setLocalStorageItem(userDataKey, userData);
-        console.log("New Google signup user data saved to localStorage");
-
         // Save user profile to Firestore
         try {
           await createUserProfile(user.uid, {
@@ -325,12 +313,7 @@ export function useAuthActions() {
             lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
             photoURL: user.photoURL || undefined,
           });
-          console.log("Google user profile saved to Firestore");
         } catch (firestoreError) {
-          console.error(
-            "Error saving Google user to Firestore:",
-            firestoreError,
-          );
           // Continue even if Firestore save fails
         }
 
@@ -338,8 +321,6 @@ export function useAuthActions() {
         sessionStorage.removeItem("redirectUrl");
         router.push("/onboarding");
       } else {
-        console.log("Existing Google user found during signup");
-
         // Check if existing user has completed onboarding
         const onboardingData = localStorage.getItem(`onboarding_${user.uid}`);
         let shouldRedirectToOnboarding = false;
@@ -368,7 +349,6 @@ export function useAuthActions() {
 
       return { success: true };
     } catch (err: any) {
-      console.error("Google signup error:", err);
       return {
         success: false,
         error: err.message || "Google sign-up failed.",
@@ -382,7 +362,6 @@ export function useAuthActions() {
       router.push("/");
       return { success: true };
     } catch (err: any) {
-      console.error("Logout error:", err);
       return {
         success: false,
         error: err.message || "Sign out failed.",

@@ -1,8 +1,34 @@
+"use client";
+
+import React from "react";
 import { APP_CONFIG } from "@/lib/constant";
 import Link from "next/link";
 import { ShoppingBag, Mail, GitHub, Twitter } from "react-feather";
+import { usePathname } from "next/navigation";
 
 export default function Footer() {
+  const pathname = usePathname();
+  const [isStorefrontHost, setIsStorefrontHost] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const host = window.location.hostname.toLowerCase();
+    const isTenantHost =
+      host.endsWith(".businessbuilder.com") ||
+      host.endsWith(".localhost") ||
+      host.endsWith(".lvh.me") ||
+      host.endsWith(".vercel.app");
+
+    setIsStorefrontHost(isTenantHost);
+  }, []);
+
+  if (isStorefrontHost || pathname?.includes("/templates/preview") || pathname?.startsWith("/shop")) {
+    return null;
+  }
+
   const currentYear = new Date().getFullYear();
 
   return (

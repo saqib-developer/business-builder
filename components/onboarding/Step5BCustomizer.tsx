@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { FiArrowLeft, FiImage, FiCheckCircle, FiGlobe, FiLoader } from "react-icons/fi";
 import { WebsiteSetup } from "@/lib/types/onboarding";
-import { TemplateConfig } from "@/lib/types/template";
+import { TemplateConfig, TEMPLATES } from "@/lib/types/template";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useConvexUpload } from "@/hooks/useConvexUpload";
 
@@ -19,6 +19,9 @@ interface Step5BCustomizerProps {
   templateId: string;
   onFinish: (websiteData: WebsiteSetup) => void;
   onBack: () => void;
+  embedded?: boolean;
+  interactivePreview?: boolean;
+  onBackLabel?: string;
 }
 
 export default function Step5BCustomizer({
@@ -27,7 +30,14 @@ export default function Step5BCustomizer({
   onFinish,
   onBack,
   initialConfig,
+  embedded = false,
+  interactivePreview = false,
+  onBackLabel = "Back to gallery",
 }: Step5BCustomizerProps) {
+  const [activeTemplateId, setActiveTemplateId] = useState(
+    initialConfig?.templateId || templateId,
+  );
+
   // Ensure heroImage is part of the state
   const [config, setConfig] = useState<TemplateConfig>({
     templateId: initialConfig?.templateId || templateId,
@@ -39,6 +49,7 @@ export default function Step5BCustomizer({
       heroHeadline: businessName || "My Business",
       heroSubheadline: "Welcome to our store. Discover amazing products.",
       heroImage: "", // added
+      whatsappNumber: "",
     },
   });
 
@@ -46,6 +57,17 @@ export default function Step5BCustomizer({
   const { uploadFile, isUploading } = useConvexUpload();
   const [isPublishing, setIsPublishing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const layoutClasses = embedded
+    ? "w-full flex flex-col xl:flex-row gap-6"
+    : "max-w-[1600px] mx-auto min-h-[85vh] flex flex-col lg:flex-row gap-8";
+  const controlsColumnClasses = embedded
+    ? "w-full xl:w-[420px] flex flex-col space-y-6"
+    : "w-full lg:w-1/3 flex flex-col space-y-6";
+  const previewColumnClasses = embedded
+    ? "w-full xl:flex-1 min-h-[620px]"
+    : "w-full lg:w-2/3";
+  const previewInteractionClasses = interactivePreview ? "pointer-events-auto select-auto" : "pointer-events-none select-none";
 
   const handleUpdateTheme = (key: keyof TemplateConfig["theme"], value: string) => {
     setConfig((prev) => ({
@@ -71,7 +93,7 @@ export default function Step5BCustomizer({
           toast.success("Image uploaded successfully!");
         }
       } catch (error) {
-        console.error("Upload error:", error);
+        void error;
         toast.error("Failed to upload image");
       }
     }
@@ -83,7 +105,12 @@ export default function Step5BCustomizer({
       toast.success("Website published successfully!", { icon: "🎉" });
       onFinish({
         type: "template",
-        templateId,
+        templateId: activeTemplateId,
+        config: {
+          ...config,
+          templateId: activeTemplateId,
+          isPublished: Boolean(initialConfig?.isPublished),
+        },
         customizations: {
           colors: {
             primary: config.theme.primaryColor,
@@ -92,6 +119,7 @@ export default function Step5BCustomizer({
           texts: {
             heroHeadline: config.content.heroHeadline,
             heroSubheadline: config.content.heroSubheadline,
+            whatsappNumber: config.content.whatsappNumber || "",
           },
           images: {
             heroImage: config.content.heroImage || "",
@@ -105,7 +133,7 @@ export default function Step5BCustomizer({
   const resetDesign = () => {
     if (confirm("Warning: This will reset your design to the defaults. Are you sure?")) {
       setConfig({
-        templateId,
+        templateId: activeTemplateId,
         theme: {
           primaryColor: "#3B82F6",
           secondaryColor: "#10B981",
@@ -114,13 +142,14 @@ export default function Step5BCustomizer({
           heroHeadline: `${businessName} Store`,
           heroSubheadline: "Welcome to our store. Discover amazing products.",
           heroImage: "", // reset image
+          whatsappNumber: config.content.whatsappNumber || "",
         },
       });
     }
   };
 
   const renderTemplate = () => {
-    switch (templateId) {
+    switch (activeTemplateId) {
       case "modern-shop":
         return <ModernShopTemplate config={config} />;
       case "classic-store":
@@ -135,15 +164,15 @@ export default function Step5BCustomizer({
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto min-h-[85vh] flex flex-col lg:flex-row gap-8">
+    <div className={layoutClasses}>
       {/* Left Sidebar: Form Controls */}
-      <div className="w-full lg:w-1/3 flex flex-col space-y-6">
+      <div className={controlsColumnClasses}>
         <div className="bg-white rounded-2xl p-6 shadow-xl border-2 border-slate-100 flex-grow">
           <div className="flex items-center gap-3 mb-6">
             <button
               onClick={onBack}
               className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
-              title="Back to gallery"
+              title={onBackLabel}
             >
               <FiArrowLeft className="w-5 h-5" />
             </button>
@@ -152,6 +181,66 @@ export default function Step5BCustomizer({
 
           <div className="space-y-8">
             {/* Colors Section */}
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 tracking-wider uppercase mb-4">Templates</h3>
+              <div className="space-y-3">
+                {TEMPLATES.map((template) => {
+                  const isActive = activeTemplateId === template.id;
+                  return (
+                    <div
+                      key={template.id}
+                      className={`rounded-xl border p-3 transition-all ${
+                        isActive
+                          ? "border-blue-400 bg-blue-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{template.name}</p>
+                          <p className="text-xs text-slate-500 mt-1">{template.description}</p>
+                        </div>
+                        {isActive && (
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTemplateId(template.id);
+                            setConfig((prev) => ({ ...prev, templateId: template.id }));
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            isActive
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          {isActive ? "Selected" : "Use Template"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `/templates/preview/${template.id}`,
+                              "_blank",
+                              "width=1200,height=800,menubar=no,toolbar=no,location=no,status=no",
+                            )
+                          }
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                        >
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
             <section>
               <h3 className="text-sm font-bold text-slate-500 tracking-wider uppercase mb-4">Colors</h3>
               <div className="space-y-4">
@@ -268,14 +357,14 @@ export default function Step5BCustomizer({
           ) : (
             <>
               <FiCheckCircle className="w-5 h-5" />
-              Publish / Finish Setup
+              {embedded ? "Save Template Changes" : "Publish / Finish Setup"}
             </>
           )}
         </button>
       </div>
 
       {/* Right Area: Live Preview */}
-      <div className="w-full lg:w-2/3 bg-slate-100 rounded-2xl border-4 border-slate-200 overflow-hidden relative shadow-inner">
+      <div className={`${previewColumnClasses} bg-slate-100 rounded-2xl border-4 border-slate-200 overflow-hidden relative shadow-inner`}>
         <div className="absolute top-0 left-0 right-0 h-12 bg-white border-b border-slate-200 flex items-center px-4 gap-2 z-10">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-red-400"></div>
@@ -289,7 +378,7 @@ export default function Step5BCustomizer({
 
         <div className="absolute top-12 left-0 right-0 bottom-0 overflow-auto bg-white custom-scrollbar">
           <div className="w-[1240px] origin-top-left transform scale-[0.6] sm:scale-[0.75] md:scale-[0.8] lg:scale-100 xl:scale-[0.85] 2xl:scale-100 transition-transform">
-            <div className="pointer-events-none select-none">
+            <div className={previewInteractionClasses}>
               {renderTemplate()}
             </div>
           </div>

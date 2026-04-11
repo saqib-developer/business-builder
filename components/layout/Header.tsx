@@ -10,6 +10,22 @@ export default function Header() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [isStorefrontHost, setIsStorefrontHost] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const host = window.location.hostname.toLowerCase();
+    const isTenantHost =
+      host.endsWith(".businessbuilder.com") ||
+      host.endsWith(".localhost") ||
+      host.endsWith(".lvh.me") ||
+      host.endsWith(".vercel.app");
+
+    setIsStorefrontHost(isTenantHost);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -21,9 +37,12 @@ export default function Header() {
 
   // Don't show header on auth pages or onboarding
   if (
+    isStorefrontHost ||
     pathname?.includes("/sign-in") ||
     pathname?.includes("/sign-up") ||
-    pathname?.includes("/onboarding")
+    pathname?.includes("/onboarding") ||
+    pathname?.includes("/templates/preview") ||
+    pathname?.startsWith("/shop")
   ) {
     return null;
   }

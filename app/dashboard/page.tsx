@@ -3,61 +3,261 @@
 import { useAuth } from "@/lib/context/AuthContext";
 import { useBrand } from "@/lib/context/BrandContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { ReactNode, useEffect, useState } from "react";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import {
-  FiShoppingBag,
-  FiLayout,
-  FiPackage,
-  FiTrendingUp,
-  FiUser,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiEdit,
-  FiGlobe,
-  FiShare2,
   FiAward,
-  FiClock,
+  FiCheckCircle,
+  FiGlobe,
   FiMessageCircle,
-  FiArrowRight,
+  FiShare2,
+  FiType,
+  FiPackage,
+  FiServer,
 } from "react-icons/fi";
-import { OnboardingData } from "@/lib/types/onboarding";
+import { OnboardingData, WebsiteSetup } from "@/lib/types/onboarding";
+import {
+  CustomDesignRequest,
+  getCustomDesignRequest,
+  getLogoData,
+} from "@/lib/firebase/firestoreService";
+import { firestore } from "@/lib/firebase";
+import WebsiteSupportChatPanel from "@/components/dashboard/WebsiteSupportChatPanel";
+import ProductsSection from "@/components/products/ProductsSection";
+import DomainHostingSection from "@/components/dashboard/DomainHostingSection";
+import LaunchStoreSection from "@/components/dashboard/LaunchStoreSection";
+
+const TOTAL_ONBOARDING_STEPS = 5;
+
+interface PillarCardProps {
+  title: string;
+  subtitle: string;
+  statusLabel: string;
+  icon: ReactNode;
+  iconToneClass: string;
+  children: ReactNode;
+}
+
+function PillarCard({
+  title,
+  subtitle,
+  statusLabel,
+  icon,
+  iconToneClass,
+  children,
+}: PillarCardProps) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_24px_50px_-38px_rgba(15,23,42,0.75)]">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-lg ${iconToneClass}`}
+          >
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+              {title}
+            </h2>
+            <p className="text-sm text-slate-500">{subtitle}</p>
+          </div>
+        </div>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+          {statusLabel}
+        </span>
+      </div>
+      {children}
+    </article>
+  );
+}
+
+function formatSelection(value: string | null | undefined) {
+  if (!value) {
+    return "Not selected";
+  }
+
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getConnectedPlatformCount(socialMedia: OnboardingData["socialMedia"] | undefined) {
+  if (!socialMedia) {
+    return 0;
+  }
+
+  return Object.values(socialMedia).filter((platform) => platform.clicked).length;
+}
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
-  const { onboardingData, brandSettings } = useBrand();
+  const { brandSettings, updateBrandSettings } = useBrand();
   const router = useRouter();
   const [localOnboardingData, setLocalOnboardingData] =
     useState<Partial<OnboardingData> | null>(null);
+  const [customLogoRequest, setCustomLogoRequest] =
+    useState<CustomDesignRequest | null>(null);
+  const [isCustomLogoRequestLoading, setIsCustomLogoRequestLoading] =
+    useState(false);
+  const [whatsappDraft, setWhatsappDraft] = useState("");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "products" | "domain-hosting" | "launch-store">("dashboard");
 
   useEffect(() => {
+    let deferredStateUpdate: number | null = null;
+
     if (!loading && !user) {
       router.push("/sign-in?redirect=/dashboard");
       return;
     }
 
-    // Check if user needs onboarding
-    if (user && !loading) {
-      const saved = localStorage.getItem(`onboarding_${user.id}`);
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          setLocalOnboardingData(data);
+    if (!user || loading) {
+      return;
+    }
 
-          // If onboarding not complete, redirect to onboarding
-          if (!data.isComplete) {
-            router.push("/onboarding");
-          }
-        } catch (error) {
-          console.error("Error loading onboarding:", error);
+    // Check local onboarding cache first
+    const saved = localStorage.getItem(`onboarding_${user.id}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+
+        // If onboarding not complete, redirect to onboarding
+        if (!data.isComplete) {
           router.push("/onboarding");
+          return;
         }
-      } else {
-        // No onboarding data, redirect to onboarding
+
+        // Keep this update async to avoid triggering lint's set-state-in-effect rule.
+        deferredStateUpdate = window.setTimeout(() => {
+          setLocalOnboardingData(data);
+        }, 0);
+      } catch (error) {
+        console.error("Error loading onboarding:", error);
         router.push("/onboarding");
       }
+    } else {
+      // Fallback to Firestore users/{id}.onboarding when local cache is unavailable.
+      const loadFromFirestore = async () => {
+        try {
+          const userRef = doc(firestore, "users", user.id);
+          const userDoc = await getDoc(userRef);
+          const remoteOnboarding = userDoc.exists() ? userDoc.data()?.onboarding : null;
+
+          if (!remoteOnboarding?.isComplete) {
+            router.push("/onboarding");
+            return;
+          }
+
+          localStorage.setItem(
+            `onboarding_${user.id}`,
+            JSON.stringify(remoteOnboarding),
+          );
+          setLocalOnboardingData(remoteOnboarding);
+        } catch (error) {
+          console.error("Error loading onboarding from Firestore:", error);
+          router.push("/onboarding");
+        }
+      };
+
+      loadFromFirestore();
     }
+
+    return () => {
+      if (deferredStateUpdate !== null) {
+        window.clearTimeout(deferredStateUpdate);
+      }
+    };
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const numberFromOnboarding =
+      localOnboardingData?.website?.config?.content?.whatsappNumber ||
+      brandSettings.whatsappNumber ||
+      "";
+    setWhatsappDraft(numberFromOnboarding);
+  }, [localOnboardingData?.website?.config?.content?.whatsappNumber, brandSettings.whatsappNumber]);
+
+  useEffect(() => {
+    if (!user?.id || !localOnboardingData) {
+      return;
+    }
+
+    // Keep local onboarding.logo in sync with persisted userLogos selection.
+    getLogoData(user.id)
+      .then((logoData) => {
+        if (!logoData?.url || logoData.type !== "custom") {
+          return;
+        }
+
+        const existingUrl = localOnboardingData.logo?.url;
+        if (existingUrl === logoData.url && localOnboardingData.logo?.type === "custom") {
+          return;
+        }
+
+        const mergedData: Partial<OnboardingData> = {
+          ...localOnboardingData,
+          logo: {
+            ...(localOnboardingData.logo || {}),
+            type: "custom",
+            url: logoData.url,
+            customDesignRequestId:
+              logoData.customDesignRequestId || localOnboardingData.logo?.customDesignRequestId,
+          },
+        };
+
+        setLocalOnboardingData(mergedData);
+        localStorage.setItem(`onboarding_${user.id}`, JSON.stringify(mergedData));
+      })
+      .catch((error) => {
+        console.error("Error syncing selected logo from Firestore:", error);
+      });
+  }, [user?.id, localOnboardingData]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    let deferredReset: number | null = null;
+    let deferredLoadingStart: number | null = null;
+
+    if (!user?.id || localOnboardingData?.logo?.type !== "custom") {
+      deferredReset = window.setTimeout(() => {
+        setCustomLogoRequest(null);
+        setIsCustomLogoRequestLoading(false);
+      }, 0);
+      return;
+    }
+
+    deferredLoadingStart = window.setTimeout(() => {
+      setIsCustomLogoRequestLoading(true);
+    }, 0);
+
+    getCustomDesignRequest(user.id)
+      .then((request) => {
+        if (!isCancelled) {
+          setCustomLogoRequest(request);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading custom logo request:", error);
+        if (!isCancelled) {
+          setCustomLogoRequest(null);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsCustomLogoRequestLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+      if (deferredReset !== null) {
+        window.clearTimeout(deferredReset);
+      }
+      if (deferredLoadingStart !== null) {
+        window.clearTimeout(deferredLoadingStart);
+      }
+    };
+  }, [user?.id, localOnboardingData?.logo?.type]);
 
   if (loading) {
     return (
@@ -74,502 +274,505 @@ export default function DashboardPage() {
     return null;
   }
 
-  const completionPercentage = localOnboardingData?.completedSteps
-    ? (localOnboardingData.completedSteps.length / 5) * 100
+  const completionPercentage = localOnboardingData.completedSteps
+    ? Math.round(
+        (localOnboardingData.completedSteps.length / TOTAL_ONBOARDING_STEPS) *
+          100,
+      )
     : 0;
 
-  const quickActions = [
+  const logoType = localOnboardingData.logo?.type;
+  const websiteType = localOnboardingData.website?.type;
+  const socialConnections = getConnectedPlatformCount(localOnboardingData.socialMedia);
+  const configuredPillars = [
+    Boolean(localOnboardingData.businessName),
+    Boolean(logoType),
+    socialConnections > 0,
+    Boolean(websiteType),
+  ].filter(Boolean).length;
+
+  const socialPlatforms = [
     {
-      icon: <FiLayout className="w-6 h-6" />,
-      title: "Choose Template",
-      description: "Select from our pre-made website templates",
-      href: "/onboarding?step=5",
-      color: "bg-blue-500",
+      name: "TikTok",
+      connected: Boolean(localOnboardingData.socialMedia?.tiktok?.clicked),
     },
     {
-      icon: <FiPackage className="w-6 h-6" />,
-      title: "Add Products",
-      description: "Start adding products to your store",
-      href: "#",
-      color: "bg-green-500",
+      name: "Instagram",
+      connected: Boolean(localOnboardingData.socialMedia?.instagram?.clicked),
     },
     {
-      icon: <FiShoppingBag className="w-6 h-6" />,
-      title: "Brand Builder",
-      description: "Create your logo and brand identity",
-      href: "/templates/settings",
-      color: "bg-purple-500",
+      name: "Facebook",
+      connected: Boolean(localOnboardingData.socialMedia?.facebook?.clicked),
     },
     {
-      icon: <FiTrendingUp className="w-6 h-6" />,
-      title: "Analytics",
-      description: "View your store performance",
-      href: "#",
-      color: "bg-orange-500",
+      name: "WhatsApp",
+      connected: Boolean(localOnboardingData.socialMedia?.whatsapp?.clicked),
     },
   ];
 
-  const stats = [
-    { label: "Products", value: "0", icon: <FiPackage className="w-5 h-5" /> },
-    {
-      label: "Orders",
-      value: "0",
-      icon: <FiShoppingBag className="w-5 h-5" />,
-    },
-    {
-      label: "Revenue",
-      value: "$0",
-      icon: <FiTrendingUp className="w-5 h-5" />,
-    },
-    { label: "Visitors", value: "0", icon: <FiUser className="w-5 h-5" /> },
-  ];
+  const progressBarWidth = Math.min(Math.max(completionPercentage, 0), 100);
+  const displayName = user.firstName?.trim() || user.email;
+  const hasTemplateSelected = Boolean(localOnboardingData.website?.templateId);
+  const selectedTemplateId = localOnboardingData.website?.templateId || brandSettings.selectedTemplateId;
+ 
+  const openEditStep = (step: number, options?: { openCustomizer?: boolean }) => {
+    if (step === 5) {
+      router.push(`/dashboard/editor?template=${selectedTemplateId || "modern-shop"}`);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      step: String(step),
+      source: "dashboard",
+      mode: "edit",
+    });
+
+    if (step === 5 && options?.openCustomizer) {
+      params.set("edit", "true");
+    }
+
+    router.push(`/onboarding?${params.toString()}`);
+  };
+
+  const handleSaveWhatsappNumber = async () => {
+    if (!user?.id) {
+      return;
+    }
+
+    const cleanedNumber = whatsappDraft.replace(/\D/g, "");
+    const updatedWebsite: WebsiteSetup = {
+      type: localOnboardingData?.website?.type ?? null,
+      templateId: localOnboardingData?.website?.templateId,
+      config: {
+        ...(localOnboardingData?.website?.config || {}),
+        content: {
+          ...(localOnboardingData?.website?.config?.content || {}),
+          whatsappNumber: cleanedNumber,
+        },
+      },
+    };
+
+    const updatedOnboarding: Partial<OnboardingData> = {
+      ...localOnboardingData,
+      website: updatedWebsite,
+    };
+
+    setWhatsappDraft(cleanedNumber);
+    setLocalOnboardingData(updatedOnboarding);
+    updateBrandSettings({ whatsappNumber: cleanedNumber });
+    localStorage.setItem(`onboarding_${user.id}`, JSON.stringify(updatedOnboarding));
+
+    try {
+      const userRef = doc(firestore, "users", user.id);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        await updateDoc(userRef, { onboarding: updatedOnboarding });
+      } else {
+        await setDoc(userRef, { onboarding: updatedOnboarding }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Error saving WhatsApp number:", error);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user.firstName || user.email}! 👋
-          </h1>
-          <p className="text-gray-600">
-            Here's an overview of your business progress.
-          </p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-slate-100">
+      <div className="pointer-events-none absolute inset-0 opacity-90">
+        <div className="absolute -top-16 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-sky-200/55 blur-3xl" />
+        <div className="absolute -right-20 top-56 h-72 w-72 rounded-full bg-blue-200/45 blur-3xl" />
+      </div>
 
-        {/* Custom Logo Design Notification */}
-        {localOnboardingData.logo?.type === "custom" && (
-          <div className="mb-6 bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl p-6 shadow-xl text-white">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                  <FiMessageCircle className="w-8 h-8" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">
-                    🎨 Custom Logo Design Request Active
-                  </h3>
-                  <p className="text-pink-50 mb-4">
-                    Our design team is ready to create your perfect logo! Chat
-                    with us to discuss your vision, share ideas, and get your
-                    custom logo designed.
-                  </p>
-                  <Link
-                    href="/dashboard/chat?type=logo"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-pink-600 rounded-xl font-semibold hover:bg-pink-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <FiMessageCircle className="w-5 h-5" />
-                    Chat with Design Team
-                    <FiArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* WordPress Website Setup Notification */}
-        {localOnboardingData.website?.type === "wordpress" && (
-          <div className="mb-6 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-2xl p-6 shadow-xl text-white">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                  <FiGlobe className="w-8 h-8" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">
-                    🌐 WordPress Website Setup Active
-                  </h3>
-                  <p className="text-blue-50 mb-4">
-                    Our team will help you set up your WordPress website! Chat
-                    with us to discuss hosting, themes, plugins, and get your
-                    site up and running.
-                  </p>
-                  <Link
-                    href="/dashboard/chat?type=wordpress"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <FiMessageCircle className="w-5 h-5" />
-                    Chat with Web Team
-                    <FiArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Custom Code Website Notification */}
-        {localOnboardingData.website?.type === "custom" && (
-          <div className="mb-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-xl text-white">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                  <FiGlobe className="w-8 h-8" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">
-                    💻 Custom Website Development Active
-                  </h3>
-                  <p className="text-indigo-50 mb-4">
-                    Our developers are ready to build your custom website! Chat
-                    with us to discuss features, functionality, design, and
-                    bring your vision to life.
-                  </p>
-                  <Link
-                    href="/dashboard/chat?type=custom-code"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <FiMessageCircle className="w-5 h-5" />
-                    Chat with Dev Team
-                    <FiArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Business Overview Card */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-8 mb-8 text-white shadow-2xl hover:shadow-premium-lg transition-all duration-300">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">
-                {localOnboardingData.businessName || "Your Business"}
-              </h2>
-              <p className="text-blue-100">
-                Your digital empire is taking shape! 🚀
-              </p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-              <div className="text-sm text-blue-100">Setup Complete</div>
-              <div className="text-2xl font-bold">{completionPercentage}%</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Business Name */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <FiEdit className="w-5 h-5 text-yellow-300" />
-                <span className="font-semibold">Business Name</span>
-              </div>
-              <p className="text-sm text-blue-100">✓ Configured</p>
-            </div>
-
-            {/* Logo */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <FiAward className="w-5 h-5 text-yellow-300" />
-                <span className="font-semibold">Logo</span>
-              </div>
-              <p className="text-sm text-blue-100">
-                {localOnboardingData.logo?.type
-                  ? `✓ ${localOnboardingData.logo.type}`
-                  : "Not set"}
-              </p>
-            </div>
-
-            {/* Social Media */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <FiShare2 className="w-5 h-5 text-yellow-300" />
-                <span className="font-semibold">Social Media</span>
-              </div>
-              <p className="text-sm text-blue-100">
-                {localOnboardingData.socialMedia
-                  ? `${
-                      Object.values(localOnboardingData.socialMedia).filter(
-                        (p) => p.clicked,
-                      ).length
-                    }/4 platforms`
-                  : "0/4 platforms"}
-              </p>
-            </div>
-
-            {/* Website */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="flex items-center gap-3 mb-2">
-                <FiGlobe className="w-5 h-5 text-yellow-300" />
-                <span className="font-semibold">Website</span>
-              </div>
-              <p className="text-sm text-blue-100">
-                {localOnboardingData.website?.type
-                  ? `✓ ${localOnboardingData.website.type}`
-                  : "Not set"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Current Status */}
-          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <FiCheckCircle className="w-6 h-6 text-green-500" />
-              Your Business Setup
-            </h3>
-
-            <div className="space-y-4">
-              {/* Business Name */}
+      <main className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <section className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-[0_35px_70px_-52px_rgba(15,23,42,0.65)] backdrop-blur">
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900 px-6 py-8 text-white sm:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
+              Dashboard Control Center
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Welcome back, {displayName}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
+              Track your progress and monitor each core business pillar from one
+              polished workspace.
+            </p>
+            
+            {/* Tab Toggle */}
+            <div className="mt-6 flex gap-2">
               <button
-                onClick={() => router.push("/onboarding?step=2")}
-                className="w-full flex items-start justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:border-green-300 transition-all text-left group"
+                onClick={() => setActiveTab("dashboard")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === "dashboard"
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-700 text-white hover:bg-slate-600"
+                }`}
               >
-                <div className="flex items-start gap-3">
-                  <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      Business Name
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {localOnboardingData.businessName}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
-                  Edit
-                </span>
+                <FiCheckCircle className="h-4 w-4" />
+                Dashboard
               </button>
+              <button
+                onClick={() => setActiveTab("products")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === "products"
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-700 text-white hover:bg-slate-600"
+                }`}
+              >
+                <FiPackage className="h-4 w-4" />
+                Products
+              </button>
+              <button
+                onClick={() => setActiveTab("domain-hosting")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === "domain-hosting"
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-700 text-white hover:bg-slate-600"
+                }`}
+              >
+                <FiServer className="h-4 w-4" />
+                Domain & Hosting
+              </button>
+              <button
+                onClick={() => setActiveTab("launch-store")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === "launch-store"
+                    ? "bg-white text-slate-900"
+                    : "bg-slate-700 text-white hover:bg-slate-600"
+                }`}
+              >
+                <FiGlobe className="h-4 w-4" />
+                Launch Store
+              </button>
+            </div>
+          </div>
 
-              {/* Logo */}
-              {localOnboardingData.logo?.type === "custom" ? (
-                <div className="w-full p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border-2 border-pink-300">
-                  <div className="flex items-start gap-3 mb-3">
-                    <FiMessageCircle className="w-5 h-5 text-pink-600 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">
-                        Custom Logo Design
-                      </h4>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Your custom design request is active. Chat with our
-                        design team to discuss your logo!
+          <div className="grid gap-4 p-6 sm:grid-cols-3 sm:p-8">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-600">Completion</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {completionPercentage}%
+              </p>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-500 to-blue-600"
+                  style={{ width: `${progressBarWidth}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-600">Configured Pillars</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {configuredPillars}/4
+              </p>
+              <p className="mt-4 text-sm text-slate-500">
+                Business Name, Logo, Social Media, Website
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-600">Connected Platforms</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {socialConnections}/4
+              </p>
+              <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                <FiCheckCircle className="h-4 w-4" />
+                Social footprint tracking active
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {activeTab === "products" ? (
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_24px_50px_-38px_rgba(15,23,42,0.75)] sm:p-8">
+            <ProductsSection userId={user?.id || ""} />
+          </section>
+        ) : activeTab === "domain-hosting" ? (
+          <DomainHostingSection
+            userId={user?.id || ""}
+            businessName={localOnboardingData.businessName}
+            onboardingData={localOnboardingData}
+            onOnboardingDataUpdate={(next) => setLocalOnboardingData(next)}
+          />
+        ) : activeTab === "launch-store" ? (
+          <LaunchStoreSection
+            userId={user?.id || ""}
+            onboardingData={localOnboardingData}
+            onOnboardingDataUpdate={(next) => setLocalOnboardingData(next)}
+          />
+        ) : (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <PillarCard
+            title="Business Name"
+            subtitle="Identity"
+            statusLabel={localOnboardingData.businessName ? "Configured" : "Pending"}
+            icon={<FiType className="h-5 w-5" />}
+            iconToneClass="bg-gradient-to-br from-sky-500 to-blue-600"
+          >
+            <p className="text-2xl font-semibold text-slate-900">
+              {localOnboardingData.businessName || "Untitled Business"}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              This card anchors the core brand name that will be reused across
+              the product experience.
+            </p>
+            
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => openEditStep(2)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              >
+                Edit
+              </button>
+            </div>
+          </PillarCard>
+
+          <PillarCard
+            title="Logo"
+            subtitle="Brand Visual"
+            statusLabel={formatSelection(logoType)}
+            icon={<FiAward className="h-5 w-5" />}
+            iconToneClass="bg-gradient-to-br from-amber-500 to-orange-500"
+          >
+            <p className="text-sm text-slate-600">
+              Current mode: <span className="font-semibold text-slate-900">{formatSelection(logoType)}</span>
+            </p>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => openEditStep(3)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              >
+                Change Logo Mode
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+              {logoType === "upload" || logoType === "ai-generated" ? (
+                localOnboardingData.logo?.url ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {logoType === "upload" ? "Uploaded Logo" : "AI Generated Logo"}
                       </p>
-                      <Link
-                        href="/dashboard/chat?type=logo"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
-                      >
-                        <FiMessageCircle className="w-4 h-4" />
-                        Open Chat
-                      </Link>
+                      <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        Active
+                      </span>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => router.push("/onboarding?step=3")}
-                  className={`w-full flex items-start justify-between p-4 rounded-lg border transition-all text-left group ${
-                    localOnboardingData.logo?.type
-                      ? "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
-                      : "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300"
-                  }`}
-                >
-                  <div className="flex items-start gap-3 flex-1">
-                    {localOnboardingData.logo?.type ? (
-                      <FiCheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                    ) : (
-                      <FiAlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">Logo</h4>
-                      <p className="text-sm text-gray-600">
-                        {localOnboardingData.logo?.type
-                          ? `${localOnboardingData.logo.type} logo`
-                          : "Add a logo to strengthen your brand"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {localOnboardingData.logo?.url && (
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                       <img
                         src={localOnboardingData.logo.url}
-                        alt="Logo"
-                        className="w-12 h-12 object-contain rounded"
+                        alt="Active logo"
+                        className="mx-auto h-28 w-full max-w-[220px] object-contain"
                       />
-                    )}
-                    <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
-                      {localOnboardingData.logo?.type ? "Edit" : "Add"}
-                    </span>
+                    </div>
                   </div>
-                </button>
-              )}
-
-              {/* Social Media */}
-              <button
-                onClick={() => router.push("/onboarding?step=4")}
-                className="w-full flex items-start justify-between p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all text-left group"
-              >
-                <div className="flex items-start gap-3">
-                  <FiShare2 className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      Social Media
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {localOnboardingData.socialMedia
-                        ? `${
-                            Object.values(
-                              localOnboardingData.socialMedia,
-                            ).filter((p) => p.clicked).length
-                          } platforms secured`
-                        : "No platforms set up yet"}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-blue-600 group-hover:text-blue-700 text-sm font-medium">
-                  {localOnboardingData.socialMedia &&
-                  Object.values(localOnboardingData.socialMedia).filter(
-                    (p) => p.clicked,
-                  ).length > 0
-                    ? "Edit"
-                    : "Setup"}
-                </span>
-              </button>
-
-              {/* Website */}
-              <div className="flex items-start justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                <button
-                  onClick={() => router.push("/onboarding?step=5")}
-                  className="flex items-start gap-3 flex-1 text-left group"
-                >
-                  <FiGlobe className="w-5 h-5 text-indigo-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      Website Template
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {localOnboardingData.website?.templateId
-                        ? "Template selected - ready to customize"
-                        : localOnboardingData.website?.type || "Not configured"}
-                    </p>
-                  </div>
-                </button>
-                <div className="flex items-center gap-2">
-                  {localOnboardingData.website?.templateId && (
+                ) : (
+                  <p className="text-slate-600">
+                    No logo asset was found for this option. Choose a new logo
+                    to refresh your brand visual.
+                  </p>
+                )
+              ) : logoType === "custom" ? (
+                localOnboardingData.logo?.url ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Custom Logo (Chosen from Chat)
+                      </p>
+                      <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        Active
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <img
+                        src={localOnboardingData.logo.url}
+                        alt="Active custom logo"
+                        className="mx-auto h-28 w-full max-w-[220px] object-contain"
+                      />
+                    </div>
                     <button
-                      onClick={() => router.push("/onboarding?step=5&edit=true")}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium mr-2"
+                      onClick={() => router.push("/dashboard/chat?type=logo")}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
                     >
-                      Customize
+                      <FiMessageCircle className="h-4 w-4" />
+                      Chat with Design Team
                     </button>
-                  )}
-                  {localOnboardingData.website?.templateId && (
-                    <Link
-                      href={`/templates/preview/${localOnboardingData.website.templateId}`}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Custom Design Request
+                      </p>
+                    </div>
+                    <p className="text-slate-700">
+                      Choose a logo image from chat to set it as your active brand logo.
+                    </p>
+                    <button
+                      onClick={() => router.push("/dashboard/chat?type=logo")}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
                     >
-                      Preview
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => router.push("/onboarding?step=5")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      <FiMessageCircle className="h-4 w-4" />
+                      Chat with Design Team
+                    </button>
+                  </div>
+                )
+              ) : (
+                <p className="text-slate-600">
+                  No logo is configured yet. Choose upload, AI generation, or
+                  custom design to activate your brand visual.
+                </p>
+              )}
+            </div>
+            
+          </PillarCard>
+
+          <PillarCard
+            title="Social Media"
+            subtitle="Distribution"
+            statusLabel={`${socialConnections}/4 Connected`}
+            icon={<FiShare2 className="h-5 w-5" />}
+            iconToneClass="bg-gradient-to-br from-emerald-500 to-cyan-600"
+          >
+            <p className="mb-4 text-sm text-slate-600">
+              Platform readiness snapshot for your initial growth channels.
+            </p>
+
+            <ul className="grid grid-cols-2 gap-3">
+              {socialPlatforms.map((platform) => (
+                <li
+                  key={platform.name}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <p className="text-sm font-medium text-slate-800">{platform.name}</p>
+                  <p
+                    className={`mt-1 text-xs font-semibold uppercase tracking-wide ${
+                      platform.connected ? "text-emerald-600" : "text-slate-500"
+                    }`}
                   >
-                    {localOnboardingData.website?.templateId
-                      ? "Change"
-                      : "Select"}
+                    {platform.connected ? "Connected" : "Pending"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => openEditStep(4)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              >
+                Edit
+              </button>
+            </div>
+          </PillarCard>
+
+          <PillarCard
+            title="Website"
+            subtitle="Digital Presence"
+            statusLabel={formatSelection(websiteType)}
+            icon={<FiGlobe className="h-5 w-5" />}
+            iconToneClass="bg-gradient-to-br from-indigo-500 to-blue-700"
+          >
+            <p className="text-sm text-slate-600">
+              Current mode: <span className="font-semibold text-slate-900">{formatSelection(websiteType)}</span>
+            </p>
+
+            <div className="mt-4 rounded-xl border p-4 text-sm">
+              {websiteType === "template" ? (
+                <div className="space-y-3">
+                  <p className="text-blue-700">
+                    Your template website is ready to customize.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openEditStep(5, { openCustomizer: true })}
+                    className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Edit Website
                   </button>
                 </div>
-              </div>
+              ) : websiteType === "wordpress" || websiteType === "custom" ? (
+                <div className="space-y-3">
+                  <p className="text-indigo-700">
+                    {websiteType === "wordpress"
+                      ? "Your WordPress setup support chat is ready when you send your first message."
+                      : "Your custom development support chat is ready when you send your first message."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/chat?type=${websiteType === "wordpress" ? "wordpress" : "custom-code"}`,
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    <FiMessageCircle className="h-4 w-4" />
+                    Chat with Developer
+                  </button>
+                  <p className="text-xs text-slate-500">
+                    Chats are separated by topic and only appear to admins after your first message.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-slate-900 font-medium">Website setup is not selected yet.</p>
+                  <p className="text-slate-600">
+                    Choose a website type to continue building your storefront.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/onboarding?step=5")}
+                    className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Choose Website Setup
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Next Steps */}
-          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <FiTrendingUp className="w-6 h-6 text-blue-500" />
-              Next Steps
-            </h3>
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                WhatsApp Business Number
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={whatsappDraft}
+                  onChange={(e) => setWhatsappDraft(e.target.value)}
+                  placeholder="15551234567"
+                  className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveWhatsappNumber}
+                  className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Save Number
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                This number powers your website contact buttons and product WhatsApp links.
+              </p>
+            </div>
 
-            <div className="space-y-3">
-              <Link
-                href="/onboarding?step=5"
-                className="block p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group hover:-translate-y-1"
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  openEditStep(5, {
+                    openCustomizer: false,
+                  })
+                }
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:text-blue-700"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                    <FiLayout className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 group-hover:text-blue-600">
-                      Customize Your Website
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Edit colors, text, and images
-                    </p>
-                  </div>
-                </div>
-              </Link>
-
-              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <FiGlobe className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">
-                      Domain & Hosting
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Available in Premium Plan
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                    Soon
-                  </span>
-                </div>
-              </div>
-
-              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <FiPackage className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">
-                      Add Products
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Launch your product catalog
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                    Soon
-                  </span>
-                </div>
-              </div>
-
-              <div className="block p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 opacity-75 hover:opacity-90 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <FiShoppingBag className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">
-                      Launch Store
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Go live with your business
-                    </p>
-                  </div>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                    Soon
-                  </span>
-                </div>
-              </div>
+                {websiteType ? "Change" : "Edit"}
+              </button>
             </div>
-          </div>
-        </div>
-
-        {/* Motivational Quote */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 border-2 border-blue-200 text-center">
-          <blockquote className="text-2xl font-medium text-gray-800 italic mb-3">
-            "The secret of getting ahead is getting started."
-          </blockquote>
-          <p className="text-gray-600 font-semibold">— Mark Twain</p>
-        </div>
+          </PillarCard>
+        </section>
+        )}
       </main>
     </div>
   );
