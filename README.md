@@ -26,6 +26,10 @@ GODADDY_API_KEY=your_godaddy_key
 GODADDY_API_SECRET=your_godaddy_secret
 # optional, defaults to https://api.godaddy.com
 GODADDY_API_BASE_URL=https://api.godaddy.com
+# server-side key used by /api/generate-logo
+HUGGINGFACE_API_KEY=your_huggingface_token
+# optional override (defaults to black-forest-labs/FLUX.1-schnell)
+HF_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell
 ```
 
 `NEXT_PUBLIC_ROOT_DOMAIN` is used by host routing logic to identify the main app domain and bypass tenant storefront resolution.
