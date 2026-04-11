@@ -1,17 +1,65 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// This proxy protects routes that require authentication
-export function proxy(request: NextRequest) {
-  // You can add authentication checks here if needed
-  // For now, we'll rely on client-side protection in the dashboard page
-  return NextResponse.next();
+function normalizeHost(value: string): string {
+  return value.trim().toLowerCase().replace(/:\d+$/, "");
 }
 
-// Configure which routes use this proxy
+function getConfiguredRootDomain(): string {
+  return normalizeHost(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "");
+}
+
+function extractTenantSubdomain(host: string, configuredRoot: string): string {
+  if (!host) {
+    return "";
+  }
+
+  if (configuredRoot && host.endsWith(`.${configuredRoot}`)) {
+    return host.slice(0, -(configuredRoot.length + 1)).split(".")[0] || "";
+  }
+
+  if (host.endsWith(".vercel.app")) {
+    const labels = host.split(".");
+    if (labels.length > 3) {
+      return labels[0] || "";
+    }
+    return "";
+  }
+
+  return "";
+}
+
+export function proxy(request: NextRequest) {
+  const incomingHost = normalizeHost(
+    request.headers.get("x-forwarded-host") ||
+      request.headers.get("host") ||
+      request.nextUrl.hostname ||
+      "",
+  );
+  const configuredRoot = getConfiguredRootDomain();
+
+  // Root app host should never be treated as a tenant domain.
+  if (
+    incomingHost === "localhost" ||
+    incomingHost === "127.0.0.1" ||
+    (configuredRoot && incomingHost === configuredRoot)
+  ) {
+    return NextResponse.next();
+  }
+
+  const tenantSubdomain = extractTenantSubdomain(incomingHost, configuredRoot);
+  if (!tenantSubdomain) {
+    return NextResponse.next();
+  }
+
+  // Tenant routing is handled in app/storefront resolution. This marker is informational.
+  const response = NextResponse.next();
+  response.headers.set("x-tenant-subdomain", tenantSubdomain);
+  return response;
+}
+
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    // Add other protected routes here
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map)$).*)",
   ],
 };

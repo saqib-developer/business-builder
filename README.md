@@ -21,11 +21,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 For domain availability checks in onboarding, add these server-side variables to `.env.local`:
 
 ```bash
+NEXT_PUBLIC_ROOT_DOMAIN=localhost:3000
 GODADDY_API_KEY=your_godaddy_key
 GODADDY_API_SECRET=your_godaddy_secret
 # optional, defaults to https://api.godaddy.com
 GODADDY_API_BASE_URL=https://api.godaddy.com
 ```
+
+`NEXT_PUBLIC_ROOT_DOMAIN` is used by host routing logic to identify the main app domain and bypass tenant storefront resolution.
+
+- Local development: set `NEXT_PUBLIC_ROOT_DOMAIN=localhost:3000`
+- Vercel production: set `NEXT_PUBLIC_ROOT_DOMAIN=your-project.vercel.app`
+- Custom production domain: set it to your root app domain (for example `app.example.com`)
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

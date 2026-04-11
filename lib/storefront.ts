@@ -14,6 +14,10 @@ function sanitizeSubdomainPrefix(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
 }
 
+function getConfiguredRootDomain(): string {
+  return normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "");
+}
+
 export function normalizeDomain(value: string): string {
   return value
     .trim()
@@ -30,20 +34,41 @@ function extractSubdomainPrefix(host: string): string {
     return "";
   }
 
+  const configuredRoot = getConfiguredRootDomain();
+  if (configuredRoot && normalized === configuredRoot) {
+    return "";
+  }
+
+  if (configuredRoot && normalized.endsWith(`.${configuredRoot}`)) {
+    const withoutRoot = normalized.slice(0, -(configuredRoot.length + 1));
+    const firstLabel = withoutRoot.split(".")[0] || "";
+    return sanitizeSubdomainPrefix(firstLabel);
+  }
+
   if (normalized.endsWith(".businessbuilder.com")) {
-    return sanitizeSubdomainPrefix(normalized.replace(/\.businessbuilder\.com$/, ""));
+    const withoutRoot = normalized.replace(/\.businessbuilder\.com$/, "");
+    return sanitizeSubdomainPrefix(withoutRoot.split(".")[0] || "");
   }
 
   if (normalized.endsWith(".localhost")) {
-    return sanitizeSubdomainPrefix(normalized.replace(/\.localhost$/, ""));
+    const withoutRoot = normalized.replace(/\.localhost$/, "");
+    return sanitizeSubdomainPrefix(withoutRoot.split(".")[0] || "");
   }
 
   if (normalized.endsWith(".lvh.me")) {
-    return sanitizeSubdomainPrefix(normalized.replace(/\.lvh\.me$/, ""));
+    const withoutRoot = normalized.replace(/\.lvh\.me$/, "");
+    return sanitizeSubdomainPrefix(withoutRoot.split(".")[0] || "");
   }
 
   if (normalized.endsWith(".vercel.app")) {
-    return sanitizeSubdomainPrefix(normalized.replace(/\.vercel\.app$/, ""));
+    const labels = normalized.split(".");
+    // Root Vercel domain: project.vercel.app -> no storefront prefix.
+    if (labels.length <= 3) {
+      return "";
+    }
+
+    // Subdomain Vercel domain: store.project.vercel.app -> "store".
+    return sanitizeSubdomainPrefix(labels[0] || "");
   }
 
   return sanitizeSubdomainPrefix(normalized.split(".")[0] || "");
@@ -53,6 +78,15 @@ export function isLikelyStorefrontHost(hostname: string): boolean {
   const host = normalizeDomain(hostname);
   if (!host) {
     return false;
+  }
+
+  const configuredRoot = getConfiguredRootDomain();
+  if (configuredRoot && host === configuredRoot) {
+    return false;
+  }
+
+  if (configuredRoot && host.endsWith(`.${configuredRoot}`)) {
+    return true;
   }
 
   const appRoot = "businessbuilder.com";
