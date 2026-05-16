@@ -278,6 +278,24 @@ export default function DomainHostingSection({
         return;
       }
 
+      // Step 1: Add domain to Vercel project
+      const vercelResponse = await fetch("/api/domains/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ domain: cleanedDomain }),
+      });
+
+      const vercelData = (await vercelResponse.json()) as Record<string, unknown>;
+
+      if (!vercelResponse.ok) {
+        const errorMsg = (vercelData?.error as string) || "Failed to add domain to Vercel.";
+        setError(errorMsg);
+        return;
+      }
+
+      // Step 2: Save to Firestore and localStorage
       const existingHosting =
         (onboardingData?.website?.config?.hosting as HostingConfig | undefined) ||
         {};
@@ -304,7 +322,7 @@ export default function DomainHostingSection({
       onOnboardingDataUpdate(nextOnboarding);
       setOwnedCustomDomain(cleanedDomain);
       setCustomDomainInput(cleanedDomain);
-      setSuccess("Custom domain saved successfully.");
+      setSuccess("Domain added successfully! Follow the DNS instructions above to connect it.");
     } catch (saveError) {
       setError("Failed to save custom domain. Please try again.");
     } finally {
