@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { FiExternalLink, FiLoader, FiWifi, FiWifiOff } from "react-icons/fi";
 import { firestore } from "@/lib/firebase";
@@ -64,6 +64,17 @@ export default function LaunchStoreSection({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  useEffect(() => {
+    if (showConfirmModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showConfirmModal]);
 
   const isPublished = Boolean(onboardingData?.website?.config?.isPublished);
   const hosting = onboardingData?.website?.config?.hosting || {};

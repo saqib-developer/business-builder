@@ -134,35 +134,40 @@ function ProductDetailPageContent() {
   }, [productId, targetUserId, isBlockedByPublishState]);
 
   const config = useMemo<Partial<TemplateConfig>>(
-    () => ({
-      templateId: selectedTemplateId,
-      theme: {
-        primaryColor:
-          storefrontData?.websiteConfig?.theme?.primaryColor ||
-          brandSettings.primaryColor,
-        secondaryColor:
-          storefrontData?.websiteConfig?.theme?.secondaryColor ||
-          brandSettings.secondaryColor,
-      },
-      content: {
-        heroHeadline:
-          storefrontData?.websiteConfig?.content?.heroHeadline ||
-          storefrontData?.businessName ||
-          brandSettings.businessName,
-        heroSubheadline:
-          storefrontData?.websiteConfig?.content?.heroSubheadline ||
-          brandSettings.tagline,
-        brandLogo:
-          storefrontData?.logoUrl ||
-          storefrontData?.websiteConfig?.content?.brandLogo ||
-          brandSettings.logo,
-        whatsappNumber:
-          storefrontData?.websiteConfig?.content?.whatsappNumber ||
-          brandSettings.whatsappNumber ||
-          onboardingData?.website?.config?.content?.whatsappNumber ||
-          "",
-      },
-    }),
+    () => {
+      const websiteConfig = storefrontData?.websiteConfig as Record<string, unknown> | undefined || {};
+      const theme = (websiteConfig?.theme as Record<string, string> | undefined) || {};
+      const content = (websiteConfig?.content as Record<string, unknown> | undefined) || {};
+      return {
+        templateId: selectedTemplateId,
+        theme: {
+          primaryColor:
+            (theme?.primaryColor as string | undefined) ||
+            brandSettings.primaryColor,
+          secondaryColor:
+            (theme?.secondaryColor as string | undefined) ||
+            brandSettings.secondaryColor,
+        },
+        content: {
+          heroHeadline:
+            (content?.heroHeadline as string | undefined) ||
+            storefrontData?.businessName ||
+            brandSettings.businessName,
+          heroSubheadline:
+            (content?.heroSubheadline as string | undefined) ||
+            brandSettings.tagline,
+          brandLogo:
+            storefrontData?.logoUrl ||
+            (content?.brandLogo as string | undefined) ||
+            brandSettings.logo,
+          whatsappNumber:
+            (content?.whatsappNumber as string | undefined) ||
+            brandSettings.whatsappNumber ||
+            ((onboardingData?.website?.config?.content as Record<string, unknown> | undefined)?.whatsappNumber as string | undefined) ||
+            "",
+        },
+      };
+    },
     [brandSettings, onboardingData, selectedTemplateId, storefrontData],
   );
 
@@ -216,7 +221,7 @@ function ProductDetailPageContent() {
 
         <div className="grid gap-10 lg:grid-cols-2 items-start">
           <div className={`overflow-hidden border ${templateFrame.card} rounded-2xl shadow-sm`}>
-            <img src={artwork} alt={product.name} className="w-full h-[420px] object-cover" />
+            <img src={product.imageUrl || artwork} alt={product.name} className="w-full h-[420px] object-cover" />
           </div>
           <div className="space-y-6">
             <div>

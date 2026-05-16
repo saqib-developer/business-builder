@@ -171,10 +171,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const numberFromOnboarding =
-      localOnboardingData?.website?.config?.content?.whatsappNumber ||
+      (localOnboardingData?.website?.config?.content?.whatsappNumber as string | undefined) ||
       brandSettings.whatsappNumber ||
       "";
-    setWhatsappDraft(numberFromOnboarding);
+    // Defer setState to avoid synchronous setState inside effect
+    setTimeout(() => setWhatsappDraft(numberFromOnboarding), 0);
   }, [localOnboardingData?.website?.config?.content?.whatsappNumber, brandSettings.whatsappNumber]);
 
   useEffect(() => {
@@ -398,7 +399,7 @@ export default function DashboardPage() {
             </p>
             
             {/* Tab Toggle */}
-            <div className="mt-6 flex gap-2">
+            <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={() => setActiveTab("dashboard")}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${

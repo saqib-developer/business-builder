@@ -58,7 +58,7 @@ function DashboardCustomizePageContent() {
     if (saved) {
       try {
         const onboardingData = JSON.parse(saved) as Partial<OnboardingData>;
-        setInitialWebsiteData(onboardingData.website);
+        setTimeout(() => setInitialWebsiteData(onboardingData.website), 0);
       } catch (error) {
         void error;
       }
@@ -77,22 +77,22 @@ function DashboardCustomizePageContent() {
   const initialConfig = useMemo<TemplateConfig>(() => {
     if (initialWebsiteData?.config?.templateId) {
       return {
-        templateId: initialWebsiteData.config.templateId,
+        templateId: initialWebsiteData.config.templateId as string,
         theme: {
           primaryColor:
-            initialWebsiteData.config.theme?.primaryColor || brandSettings.primaryColor,
+            (initialWebsiteData.config.theme?.primaryColor as string | undefined) || brandSettings.primaryColor,
           secondaryColor:
-            initialWebsiteData.config.theme?.secondaryColor || brandSettings.secondaryColor,
+            (initialWebsiteData.config.theme?.secondaryColor as string | undefined) || brandSettings.secondaryColor,
         },
         content: {
           heroHeadline:
-            initialWebsiteData.config.content?.heroHeadline || brandSettings.businessName,
+            (initialWebsiteData.config.content?.heroHeadline as string | undefined) || brandSettings.businessName,
           heroSubheadline:
-            initialWebsiteData.config.content?.heroSubheadline || brandSettings.tagline,
-          heroImage: initialWebsiteData.config.content?.heroImage || "",
-          brandLogo: initialWebsiteData.config.content?.brandLogo || brandSettings.logo,
+            (initialWebsiteData.config.content?.heroSubheadline as string | undefined) || brandSettings.tagline,
+          heroImage: (initialWebsiteData.config.content?.heroImage as string | undefined) || "",
+          brandLogo: (initialWebsiteData.config.content?.brandLogo as string | undefined) || brandSettings.logo,
           whatsappNumber:
-            initialWebsiteData.config.content?.whatsappNumber || brandSettings.whatsappNumber || "",
+            (initialWebsiteData.config.content?.whatsappNumber as string | undefined) || brandSettings.whatsappNumber || "",
         },
       };
     }

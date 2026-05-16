@@ -38,7 +38,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("brandSettings");
     if (saved) {
       try {
-        setBrandSettings(JSON.parse(saved));
+        // Defer to avoid synchronous setState in effect
+        setTimeout(() => setBrandSettings(JSON.parse(saved)), 0);
       } catch (error) {
         console.error("Error loading brand settings:", error);
       }
@@ -51,18 +52,21 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     if (savedOnboarding) {
       try {
         const data = JSON.parse(savedOnboarding);
-        setOnboardingData(data);
-        
-        // Sync onboarding data with brand settings
-        if (data.businessName) {
-          setBrandSettings((prev) => ({
-            ...prev,
-            businessName: data.businessName,
-            logo: data.logo?.url,
-            whatsappNumber: data.website?.config?.content?.whatsappNumber || prev.whatsappNumber,
-            selectedTemplateId: data.website?.templateId || prev.selectedTemplateId,
-          }));
-        }
+        // Defer state updates to avoid synchronous setState in effect
+        setTimeout(() => {
+          setOnboardingData(data);
+
+          // Sync onboarding data with brand settings
+          if (data.businessName) {
+            setBrandSettings((prev) => ({
+              ...prev,
+              businessName: data.businessName,
+              logo: data.logo?.url,
+              whatsappNumber: data.website?.config?.content?.whatsappNumber || prev.whatsappNumber,
+              selectedTemplateId: data.website?.templateId || prev.selectedTemplateId,
+            }));
+          }
+        }, 0);
       } catch (error) {
         console.error("Error loading onboarding data:", error);
       }

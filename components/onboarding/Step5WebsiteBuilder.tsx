@@ -72,28 +72,32 @@ export default function Step5WebsiteBuilder({
   };
 
   if (mode === "customize" && selectedOption === "template" && selectedTemplateId) {
+    const config = initialData?.config as Record<string, unknown> | undefined || {};
+    const theme = (config?.theme as Record<string, string> | undefined) || {};
+    const content = (config?.content as Record<string, unknown> | undefined) || {};
+    
     const initialTemplateConfig =
       initialData?.templateId === selectedTemplateId
         ? {
             templateId: selectedTemplateId,
-            isPublished: initialData?.config?.isPublished,
+            isPublished: (config?.isPublished as boolean | undefined),
             theme: {
               primaryColor:
-                initialData?.config?.theme?.primaryColor || "#3B82F6",
+                (theme?.primaryColor as string | undefined) || "#3B82F6",
               secondaryColor:
-                initialData?.config?.theme?.secondaryColor || "#10B981",
+                (theme?.secondaryColor as string | undefined) || "#10B981",
             },
             content: {
               heroHeadline:
-                initialData?.config?.content?.heroHeadline ||
+                (content?.heroHeadline as string | undefined) ||
                 `${businessName} Store`,
               heroSubheadline:
-                initialData?.config?.content?.heroSubheadline ||
+                (content?.heroSubheadline as string | undefined) ||
                 "Welcome to our store. Discover amazing products.",
-              heroImage: initialData?.config?.content?.heroImage || "",
-              brandLogo: initialData?.config?.content?.brandLogo,
+              heroImage: (content?.heroImage as string | undefined) || "",
+              brandLogo: (content?.brandLogo as string | undefined),
               whatsappNumber:
-                initialData?.config?.content?.whatsappNumber || "",
+                (content?.whatsappNumber as string | undefined) || "",
             },
           }
         : undefined;

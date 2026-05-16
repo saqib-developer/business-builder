@@ -111,18 +111,20 @@ function HomeContent() {
     }
 
     const config = storefrontData.websiteConfig || {};
+    const theme = (config as Record<string, unknown>)?.theme as Record<string, string> | undefined || {};
+    const content = (config as Record<string, unknown>)?.content as Record<string, unknown> | undefined || {};
     return {
       templateId: storefrontData.templateId,
       theme: {
-        primaryColor: config?.theme?.primaryColor || "#2563EB",
-        secondaryColor: config?.theme?.secondaryColor || "#64748B",
+        primaryColor: (theme as Record<string, unknown>)?.primaryColor as string || "#2563EB",
+        secondaryColor: (theme as Record<string, unknown>)?.secondaryColor as string || "#64748B",
       },
       content: {
-        heroHeadline: config?.content?.heroHeadline || storefrontData.businessName,
-        heroSubheadline: config?.content?.heroSubheadline || "Welcome to our store.",
-        heroImage: config?.content?.heroImage || "",
-        brandLogo: storefrontData.logoUrl || config?.content?.brandLogo || "",
-        whatsappNumber: config?.content?.whatsappNumber || "",
+        heroHeadline: (content as Record<string, unknown>)?.heroHeadline as string || storefrontData.businessName,
+        heroSubheadline: (content as Record<string, unknown>)?.heroSubheadline as string || "Welcome to our store.",
+        heroImage: (content as Record<string, unknown>)?.heroImage as string || "",
+        brandLogo: storefrontData.logoUrl || (content as Record<string, unknown>)?.brandLogo as string || "",
+        whatsappNumber: (content as Record<string, unknown>)?.whatsappNumber as string || "",
       },
     };
   }, [storefrontData]);
@@ -387,9 +389,9 @@ function HomeContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-blue-50/30 to-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="bg-gradient-to-b from-blue-50/30 to-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="text-center max-w-3xl mx-auto">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
             Launch Your Online Store
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
               {" "}
@@ -421,7 +423,7 @@ function HomeContent() {
       {/* Features Section */}
       <section
         id="features"
-        className="bg-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24"
+        className="bg-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
       >
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -452,7 +454,7 @@ function HomeContent() {
       </section>
 
       {/* How It Works Section */}
-      <section className="bg-white py-24">
+      <section className="bg-white py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -481,17 +483,17 @@ function HomeContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-b from-white to-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-16 text-center text-white shadow-premium-lg hover:shadow-premium transition-all duration-300">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+      <section className="bg-gradient-to-b from-white to-gray-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-3xl px-6 py-12 sm:p-16 text-center text-white shadow-premium-lg hover:shadow-premium transition-all duration-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
             Ready to Build Your Business?
           </h2>
-          <p className="text-xl md:text-2xl mb-10 text-blue-100 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl mb-8 sm:mb-10 text-blue-100 max-w-2xl mx-auto leading-relaxed">
             Join thousands of entrepreneurs who trust Business Builder
           </p>
           <Link
             href="/sign-up"
-            className="inline-flex items-center space-x-2 px-10 py-5 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl hover:-translate-y-1"
+            className="inline-flex items-center space-x-2 px-6 sm:px-10 py-4 sm:py-5 bg-white text-blue-600 rounded-xl font-bold text-base sm:text-lg hover:bg-gray-50 transition-all duration-200 shadow-xl hover:shadow-2xl hover:-translate-y-1"
           >
             <span>Create Your Account</span>
             <FiCheckCircle className="w-6 h-6" />

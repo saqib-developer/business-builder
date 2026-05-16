@@ -33,22 +33,39 @@ export default function ProductFormModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     if (initialData) {
-      setFormData(initialData);
-      setImagePreview(initialData.imageUrl || null);
+      // Defer setting state to avoid synchronous setState inside effect
+      setTimeout(() => {
+        setFormData(initialData);
+        setImagePreview(initialData.imageUrl || null);
+      }, 0);
     } else {
-      setFormData({
-        name: "",
-        description: "",
-        price: "",
-        imageUrl: "",
-      });
-      setImagePreview(null);
+      setTimeout(() => {
+        setFormData({
+          name: "",
+          description: "",
+          price: "",
+          imageUrl: "",
+        });
+        setImagePreview(null);
+      }, 0);
     }
 
-    setError(null);
+    // Defer to avoid synchronous setState in effect
+    setTimeout(() => setError(null), 0);
   }, [initialData, isOpen]);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -108,10 +125,10 @@ export default function ProductFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-lg max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 p-6">
+        <div className="flex items-center justify-between border-b border-gray-200 p-6 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">
             {initialData ? "Edit Product" : "Add New Product"}
           </h2>
@@ -125,7 +142,7 @@ export default function ProductFormModal({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 overflow-y-auto flex-1">
           {error && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
               {error}
@@ -202,11 +219,14 @@ export default function ProductFormModal({
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-blue-700 focus:outline-none"
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+              💡 <span className="font-medium">Tip:</span> Square (1:1) or landscape (4:3) works best (e.g. 800x800px).
+            </p>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex gap-3 border-t border-gray-200 p-6">
+        <div className="flex gap-3 border-t border-gray-200 p-6 flex-shrink-0">
           <button
             onClick={onClose}
             disabled={isLoading}

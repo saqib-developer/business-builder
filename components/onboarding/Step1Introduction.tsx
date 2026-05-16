@@ -44,12 +44,12 @@ export default function Step1Introduction({ onNext }: Step1IntroductionProps) {
         </div>
         
         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-          Let's Build Your Empire Together
+          Let&apos;s Build Your Empire Together
         </h1>
         
         <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-          In just a few simple steps, you'll go from having an idea to having a complete 
-          digital business presence. We'll guide you through every step of the way!
+          In just a few simple steps, you&apos;ll go from having an idea to having a complete 
+          digital business presence. We&apos;ll guide you through every step of the way!
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export default function Step1Introduction({ onNext }: Step1IntroductionProps) {
           onClick={onNext}
           className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-5 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-xl"
         >
-          Let's Get Started!
+          Let&apos;s Get Started!
           <FiArrowRight className="w-6 h-6" />
         </button>
         <p className="mt-4 text-gray-500 text-sm">

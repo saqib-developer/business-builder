@@ -34,14 +34,15 @@ export default function TemplatePreviewPage() {
 
   useEffect(() => {
     if (!user?.id) {
-      setPreviewConfig(defaultConfig);
+      // Defer to avoid synchronous setState inside effect
+      setTimeout(() => setPreviewConfig(defaultConfig), 0);
       return;
     }
 
     try {
       const saved = localStorage.getItem(`onboarding_${user.id}`);
       if (!saved) {
-        setPreviewConfig(defaultConfig);
+        setTimeout(() => setPreviewConfig(defaultConfig), 0);
         return;
       }
 
@@ -49,26 +50,28 @@ export default function TemplatePreviewPage() {
       const selectedLogo = onboardingData?.logo?.url || "";
       const websiteConfig = onboardingData?.website?.config;
 
-      setPreviewConfig({
-        templateId,
-        theme: {
-          primaryColor:
-            websiteConfig?.theme?.primaryColor || defaultConfig.theme.primaryColor,
-          secondaryColor:
-            websiteConfig?.theme?.secondaryColor || defaultConfig.theme.secondaryColor,
-        },
-        content: {
-          heroHeadline:
-            websiteConfig?.content?.heroHeadline || defaultConfig.content.heroHeadline,
-          heroSubheadline:
-            websiteConfig?.content?.heroSubheadline || defaultConfig.content.heroSubheadline,
-          heroImage: websiteConfig?.content?.heroImage || defaultConfig.content.heroImage,
-          brandLogo: selectedLogo || websiteConfig?.content?.brandLogo || "",
-        },
-      });
+        setTimeout(() => {
+          setPreviewConfig({
+            templateId,
+            theme: {
+              primaryColor:
+                websiteConfig?.theme?.primaryColor || defaultConfig.theme.primaryColor,
+              secondaryColor:
+                websiteConfig?.theme?.secondaryColor || defaultConfig.theme.secondaryColor,
+            },
+            content: {
+              heroHeadline:
+                websiteConfig?.content?.heroHeadline || defaultConfig.content.heroHeadline,
+              heroSubheadline:
+                websiteConfig?.content?.heroSubheadline || defaultConfig.content.heroSubheadline,
+              heroImage: websiteConfig?.content?.heroImage || defaultConfig.content.heroImage,
+              brandLogo: selectedLogo || websiteConfig?.content?.brandLogo || "",
+            },
+          });
+        }, 0);
     } catch (error) {
       console.error("Error loading template preview data:", error);
-      setPreviewConfig(defaultConfig);
+      setTimeout(() => setPreviewConfig(defaultConfig), 0);
     }
   }, [user?.id, templateId, defaultConfig]);
 

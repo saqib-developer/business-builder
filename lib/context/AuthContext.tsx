@@ -47,17 +47,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   // Helper function to create a basic user object
-  const createBasicUser = (firebaseUser: any): User => {
+  const createBasicUser = (firebaseUser: unknown): User => {
+    const fu = firebaseUser as { uid: string; email?: string; displayName?: string; photoURL?: string };
     return {
-      id: firebaseUser.uid,
-      email: firebaseUser.email || "",
-      firstName: firebaseUser.displayName?.split(" ")[0] || "",
-      lastName: firebaseUser.displayName?.split(" ").slice(1).join(" ") || "",
+      id: fu.uid,
+      email: fu.email || "",
+      firstName: fu.displayName?.split(" ")[0] || "",
+      lastName: fu.displayName?.split(" ").slice(1).join(" ") || "",
       role: "user",
       country: "",
       dob: new Date(),
       phone: "",
-      photoURL: firebaseUser.photoURL || "",
+      photoURL: fu.photoURL || "",
       address: "",
       bio: "",
       dateOfBirth: "",
@@ -79,37 +80,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Helper function to convert localStorage data to User type
-  const convertLocalStorageUser = (localData: any, docId: string): User => {
+  const convertLocalStorageUser = (localData: unknown, docId: string): User => {
+    const ld = (localData as Record<string, unknown>) || {};
     return {
       id: docId,
-      email: localData.email || "",
-      firstName: localData.firstName || "",
-      lastName: localData.lastName || "",
-      country: localData.country || "",
-      dob: localData.dob ? new Date(localData.dob) : new Date(),
-      phone: localData.phone || "",
-      photoURL: localData.photoURL || "",
-      address: localData.address || "",
-      bio: localData.bio || "",
-      dateOfBirth: localData.dateOfBirth || "",
-      role: localData.role || "user",
-      paymentMethods: localData.paymentMethods || [],
-      consent: localData.consent || {
+      email: (ld.email as string) || "",
+      firstName: (ld.firstName as string) || "",
+      lastName: (ld.lastName as string) || "",
+      country: (ld.country as string) || "",
+      dob: ld.dob ? new Date(ld.dob as string | number | Date) : new Date(),
+      phone: (ld.phone as string) || "",
+      photoURL: (ld.photoURL as string) || "",
+      address: (ld.address as string) || "",
+      bio: (ld.bio as string) || "",
+      dateOfBirth: (ld.dateOfBirth as string) || "",
+      role: ((ld.role as string) || "user") as "user" | "admin",
+      paymentMethods: (ld.paymentMethods as unknown[]) || [],
+      consent: (ld.consent as any) || {
         marketingEmails: false,
         termsOfService: false,
         privacyPolicy: false,
       },
       purchaseHistory: {
-        activeServices: localData.purchaseHistory?.activeServices || [],
-        totalServicesOrdered:
-          localData.purchaseHistory?.totalServicesOrdered || 0,
-        totalSpent: localData.purchaseHistory?.totalSpent || 0,
-        totalOrders: localData.purchaseHistory?.totalOrders || 0,
-        boughtProducts: localData.purchaseHistory?.boughtProducts || [],
+        activeServices: ((ld.purchaseHistory as any)?.activeServices as string[]) || [],
+        totalServicesOrdered: ((ld.purchaseHistory as any)?.totalServicesOrdered as number) || 0,
+        totalSpent: ((ld.purchaseHistory as any)?.totalSpent as number) || 0,
+        totalOrders: ((ld.purchaseHistory as any)?.totalOrders as number) || 0,
+        boughtProducts: ((ld.purchaseHistory as any)?.boughtProducts as string[]) || [],
       },
-      createdAt: localData.createdAt
-        ? new Date(localData.createdAt)
-        : new Date(),
+      createdAt: ld.createdAt ? new Date(ld.createdAt as string | number | Date) : new Date(),
     };
   };
 

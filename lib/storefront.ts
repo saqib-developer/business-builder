@@ -7,7 +7,7 @@ export interface StorefrontResolution {
   logoUrl: string;
   isPublished: boolean;
   templateId: string;
-  websiteConfig: Record<string, any>;
+  websiteConfig: Record<string, unknown>;
 }
 
 function sanitizeSubdomainPrefix(value: string): string {
@@ -109,37 +109,46 @@ export function isLikelyStorefrontHost(hostname: string): boolean {
   return true;
 }
 
-function mapUserDocToStorefront(userId: string, rawData: any): StorefrontResolution {
-  const onboarding = rawData?.onboarding || {};
-  const website = onboarding?.website || {};
-  const websiteConfig = website?.config || {};
+function mapUserDocToStorefront(userId: string, rawData: unknown): StorefrontResolution {
+  const rd = rawData as Record<string, unknown>;
+  const onboarding = (rd.onboarding ?? {}) as Record<string, unknown>;
+  const website = (onboarding.website ?? {}) as Record<string, unknown>;
+  const websiteConfig = (website.config ?? {}) as Record<string, unknown>;
 
   return {
     userId,
-    businessName: onboarding?.businessName || "Your Business",
-    logoUrl: onboarding?.logo?.url || websiteConfig?.content?.brandLogo || "",
-    isPublished: Boolean(websiteConfig?.isPublished),
-    templateId: website?.templateId || websiteConfig?.templateId || "modern-shop",
+    businessName: (onboarding.businessName as string) || "Your Business",
+    logoUrl:
+      ((onboarding.logo as Record<string, unknown>)?.url as string) ||
+      ((websiteConfig.content as Record<string, unknown>)?.brandLogo as string) ||
+      "",
+    isPublished: Boolean(websiteConfig.isPublished as boolean),
+    templateId:
+      (website.templateId as string) || (websiteConfig.templateId as string) ||
+      "modern-shop",
     websiteConfig,
   };
 }
 
-export function getPrimaryLiveDomain(hosting: any): string {
+export function getPrimaryLiveDomain(hosting: unknown): string {
   if (!hosting) {
     return "";
   }
 
-  if (hosting.method === "custom-domain" && hosting.customDomain) {
-    return normalizeDomain(hosting.customDomain);
+  const h = hosting as Record<string, unknown>;
+  if ((h.method as string) === "custom-domain" && (h.customDomain as string)) {
+    return normalizeDomain(h.customDomain as string);
   }
 
-  const free = hosting.activeFreeSubdomain || hosting.freeSubdomains?.[0] || "";
+  const free = (h.activeFreeSubdomain as string) ||
+    (h.freeSubdomains as string[])?.[0] ||
+    "";
   if (free) {
     return normalizeDomain(free);
   }
 
-  if (hosting.freeSubdomain) {
-    return `${sanitizeSubdomainPrefix(hosting.freeSubdomain)}.businessbuilder.com`;
+  if (h.freeSubdomain as string) {
+    return `${sanitizeSubdomainPrefix(h.freeSubdomain as string)}.businessbuilder.com`;
   }
 
   return "";

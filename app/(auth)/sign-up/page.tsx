@@ -90,19 +90,19 @@ function SignUpForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 overflow-x-hidden">
       <div className="w-full max-w-md">
         {/* Back to Home */}
         <Link
           href="/"
-          className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 mb-8 transition-all hover:-translate-x-1"
+          className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 mb-6 sm:mb-8 transition-all hover:-translate-x-1"
         >
           <FiArrowLeft />
           <span className="font-medium">Back to Home</span>
         </Link>
 
         {/* Sign Up Card */}
-        <div className="bg-white rounded-2xl shadow-premium p-8 border border-gray-100 hover:shadow-premium-lg transition-all duration-300">
+        <div className="bg-white rounded-2xl shadow-premium p-6 sm:p-8 border border-gray-100 hover:shadow-premium-lg transition-all duration-300">
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md hover:shadow-lg transition-all hover:scale-105">
               <FiShoppingBag className="w-8 h-8 text-white" />

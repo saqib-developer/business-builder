@@ -101,9 +101,9 @@ export function useConvexUpload(): UseConvexUploadReturn {
       setIsUploading(false);
 
       return result as UploadResult;
-    } catch (err: any) {
-      const errorMessage =
-        err.message || "An error occurred while uploading the file";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const errorMessage = message || "An error occurred while uploading the file";
       setError(errorMessage);
       setIsUploading(false);
       throw new Error(errorMessage);

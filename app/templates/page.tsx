@@ -26,10 +26,13 @@ export default function TemplatesPage() {
         try {
           const data = JSON.parse(saved);
           if (data.website?.templateId) {
-            setSelectedTemplate(data.website.templateId);
-            updateBrandSettings({
-              selectedTemplateId: data.website.templateId,
-            });
+            // Defer state updates to avoid synchronous setState in effect
+            setTimeout(() => {
+              setSelectedTemplate(data.website.templateId);
+              updateBrandSettings({
+                selectedTemplateId: data.website.templateId,
+              });
+            }, 0);
           }
         } catch (error) {
           console.error("Error loading template from onboarding:", error);

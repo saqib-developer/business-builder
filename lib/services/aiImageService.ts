@@ -96,12 +96,12 @@ export async function generateLogoImage(
       imageBlob,
       remaining: updatedLimit.remaining,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI generation error:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error:
-        error.message || "An unexpected error occurred during image generation",
+      error: message || "An unexpected error occurred during image generation",
       remaining: limitCheck.remaining,
     };
   }

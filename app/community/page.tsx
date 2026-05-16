@@ -24,7 +24,7 @@ export default function CommunityPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [showPostModal, setShowPostModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(true);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [newPostTitle, setNewPostTitle] = useState("");
@@ -42,6 +42,18 @@ export default function CommunityPage() {
 
     return () => unsubscribe();
   }, []);
+
+  // Modal Scroll Lock
+  useEffect(() => {
+    if (showPostModal || showReplyModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showPostModal, showReplyModal]);
 
   const getInitials = (name: string) => {
     return name
@@ -344,8 +356,9 @@ export default function CommunityPage() {
       {/* Post Question Modal */}
       {showPostModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-2xl font-bold text-gray-900">
                 Post a Question
               </h2>
@@ -357,7 +370,8 @@ export default function CommunityPage() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            {/* Scrollable Body */}
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Question Title
@@ -400,25 +414,26 @@ export default function CommunityPage() {
                   <option>Other</option>
                 </select>
               </div>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => setShowPostModal(false)}
-                  disabled={posting}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePostQuestion}
-                  disabled={
-                    !newPostTitle.trim() || !newPostBody.trim() || posting
-                  }
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
-                >
-                  {posting ? "Posting..." : "Post Question"}
-                </button>
-              </div>
+            {/* Sticky Footer */}
+            <div className="flex gap-3 p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50/50">
+              <button
+                onClick={() => setShowPostModal(false)}
+                disabled={posting}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePostQuestion}
+                disabled={
+                  !newPostTitle.trim() || !newPostBody.trim() || posting
+                }
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
+              >
+                {posting ? "Posting..." : "Post Question"}
+              </button>
             </div>
           </div>
         </div>
@@ -427,8 +442,9 @@ export default function CommunityPage() {
       {/* Reply Modal */}
       {showReplyModal && selectedPost && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-2xl font-bold text-gray-900">
                 Reply to Post
               </h2>
@@ -443,15 +459,16 @@ export default function CommunityPage() {
               </button>
             </div>
 
-            {/* Original Post Preview */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-sm font-semibold text-gray-900 mb-1">
-                {selectedPost.title}
-              </p>
-              <p className="text-sm text-gray-600">{selectedPost.body}</p>
-            </div>
+            {/* Scrollable Body */}
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Original Post Preview */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
+                <p className="text-sm font-semibold text-gray-900 mb-1">
+                  {selectedPost.title}
+                </p>
+                <p className="text-sm text-gray-600">{selectedPost.body}</p>
+              </div>
 
-            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Your Reply
@@ -464,27 +481,28 @@ export default function CommunityPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowReplyModal(false);
-                    setSelectedPost(null);
-                  }}
-                  disabled={posting}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReply}
-                  disabled={!replyText.trim() || posting}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  <FiSend className="w-4 h-4" />
-                  {posting ? "Posting..." : "Post Reply"}
-                </button>
-              </div>
+            {/* Sticky Footer */}
+            <div className="flex gap-3 p-6 border-t border-gray-100 flex-shrink-0 bg-gray-50/50">
+              <button
+                onClick={() => {
+                  setShowReplyModal(false);
+                  setSelectedPost(null);
+                }}
+                disabled={posting}
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReply}
+                disabled={!replyText.trim() || posting}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              >
+                <FiSend className="w-4 h-4" />
+                {posting ? "Posting..." : "Post Reply"}
+              </button>
             </div>
           </div>
         </div>

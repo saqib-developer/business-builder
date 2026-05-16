@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FiPlus, FiLoader, FiAlertCircle } from "react-icons/fi";
+import { FiPlus, FiLoader, FiAlertCircle, FiInfo } from "react-icons/fi";
 import {
   createProduct,
   updateProduct,
@@ -39,7 +39,13 @@ export default function ProductsSection({ userId }: ProductsSectionProps) {
     const unsubscribe = subscribeToUserProducts(
       userId,
       (updatedProducts) => {
-        setProducts(updatedProducts);
+        // Convert Timestamp to Date if needed
+        const convertedProducts = updatedProducts.map((p) => ({
+          ...p,
+          createdAt: p.createdAt instanceof Date ? p.createdAt : (p.createdAt as unknown as any)?.toDate?.() || new Date(),
+          updatedAt: p.updatedAt instanceof Date ? p.updatedAt : (p.updatedAt as unknown as any)?.toDate?.() || new Date(),
+        }));
+        setProducts(convertedProducts as any);
         setError(null);
         setIsLoading(false);
       },
@@ -48,7 +54,7 @@ export default function ProductsSection({ userId }: ProductsSectionProps) {
         setIsLoading(false);
         setError(
           listenerError?.message ||
-            "Unable to load products. Check Firestore permissions and indexes.",
+          "Unable to load products. Check Firestore permissions and indexes.",
         );
       },
     );
@@ -158,7 +164,7 @@ export default function ProductsSection({ userId }: ProductsSectionProps) {
           <h2 className="text-2xl font-bold text-gray-900">Products</h2>
           <p className="text-sm text-gray-600 mt-1">
             Manage your inventory and product listings. Your products will appear
-            on your shop pages.
+            on your website pages.
           </p>
         </div>
         <button
@@ -169,6 +175,16 @@ export default function ProductsSection({ userId }: ProductsSectionProps) {
           <FiPlus className="h-5 w-5" />
           Add Product
         </button>
+      </div>
+      
+      {/* Image Tip Alert */}
+      <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4 flex gap-3 items-start">
+        <div className="rounded-md bg-blue-100 p-1 text-blue-600 mt-0.5 flex-shrink-0">
+          <FiInfo className="h-4 w-4" />
+        </div>
+        <div className="flex-1 text-sm text-blue-800 leading-relaxed">
+          <span className="font-semibold">Image Recommendation:</span> For the best display on product cards and detail views, we recommend using square (<span className="font-semibold">1:1</span>) or landscape (<span className="font-semibold">4:3</span>) images (e.g., <span className="font-semibold">800x800</span> or <span className="font-semibold">1200x900</span> pixels). They will automatically adapt to your website layout.
+        </div>
       </div>
 
       {/* Error Alert */}
@@ -217,11 +233,11 @@ export default function ProductsSection({ userId }: ProductsSectionProps) {
         initialData={
           editingProduct
             ? {
-                name: editingProduct.name,
-                description: editingProduct.description,
-                price: editingProduct.price,
-                imageUrl: editingProduct.imageUrl,
-              }
+              name: editingProduct.name,
+              description: editingProduct.description,
+              price: editingProduct.price,
+              imageUrl: editingProduct.imageUrl,
+            }
             : undefined
         }
         isLoading={isSaving || isUploading}

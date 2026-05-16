@@ -7,8 +7,8 @@ export interface Product {
   description: string;
   price: string;
   imageUrl: string;
-  createdAt: any; // Timestamp
-  updatedAt: any; // Timestamp
+  createdAt: string | Date; // Timestamp
+  updatedAt: string | Date; // Timestamp
 }
 
 export interface ProductFormData {

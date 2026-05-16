@@ -88,18 +88,20 @@ function StorefrontShopPageContent() {
     }
 
     const config = storefrontData.websiteConfig || {};
+    const theme = (config as Record<string, unknown>)?.theme as Record<string, string> | undefined || {};
+    const content = (config as Record<string, unknown>)?.content as Record<string, unknown> | undefined || {};
     return {
       templateId: storefrontData.templateId,
       theme: {
-        primaryColor: config?.theme?.primaryColor || "#2563EB",
-        secondaryColor: config?.theme?.secondaryColor || "#64748B",
+        primaryColor: (theme as Record<string, unknown>)?.primaryColor as string || "#2563EB",
+        secondaryColor: (theme as Record<string, unknown>)?.secondaryColor as string || "#64748B",
       },
       content: {
-        heroHeadline: config?.content?.heroHeadline || storefrontData.businessName,
-        heroSubheadline: config?.content?.heroSubheadline || "Welcome to our store.",
-        heroImage: config?.content?.heroImage || "",
-        brandLogo: storefrontData.logoUrl || config?.content?.brandLogo || "",
-        whatsappNumber: config?.content?.whatsappNumber || "",
+        heroHeadline: (content as Record<string, unknown>)?.heroHeadline as string || storefrontData.businessName,
+        heroSubheadline: (content as Record<string, unknown>)?.heroSubheadline as string || "Welcome to our store.",
+        heroImage: (content as Record<string, unknown>)?.heroImage as string || "",
+        brandLogo: storefrontData.logoUrl || (content as Record<string, unknown>)?.brandLogo as string || "",
+        whatsappNumber: (content as Record<string, unknown>)?.whatsappNumber as string || "",
       },
     };
   }, [storefrontData]);

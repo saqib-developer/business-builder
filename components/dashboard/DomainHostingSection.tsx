@@ -58,6 +58,17 @@ export default function DomainHostingSection({
   const [isDeletingDomain, setIsDeletingDomain] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    // Check if running on localhost
+    if (typeof window !== "undefined") {
+      setIsLocalhost(
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+      );
+    }
+  }, []);
 
   const sanitizedBusinessName = useMemo(
     () => sanitizeSubdomain(businessName || ""),
@@ -65,7 +76,7 @@ export default function DomainHostingSection({
   );
 
   const selectedRoutingMethod =
-    onboardingData?.website?.config?.hosting?.method as RoutingMethod | undefined;
+    ((onboardingData?.website?.config as Record<string, unknown> | undefined)?.hosting as Record<string, unknown> | undefined)?.method as RoutingMethod | undefined;
 
   const syncLocalHostingState = (hosting: HostingConfig) => {
     const legacy = hosting.freeSubdomain ? `${sanitizeSubdomain(hosting.freeSubdomain)}.businessbuilder.com` : "";
@@ -468,6 +479,24 @@ export default function DomainHostingSection({
             Auto-suggested from your business name in Firestore.
           </p>
 
+          {isLocalhost && subdomainInput && (
+            <div className="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+              <p className="mb-2 text-xs font-semibold text-amber-900">
+                Your website will work on:
+              </p>
+              <div className="space-y-2 text-sm text-amber-900">
+                <p>
+                  <span className="font-medium">Development:</span>{" "}
+                  <span className="font-mono">http://{sanitizeSubdomain(subdomainInput)}.localhost:3000</span>
+                </p>
+                <p>
+                  <span className="font-medium">Production:</span>{" "}
+                  <span className="font-mono">{sanitizeSubdomain(subdomainInput)}.businessbuilder.com</span>
+                </p>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleSaveSubdomain}
@@ -570,31 +599,47 @@ export default function DomainHostingSection({
             {activeDomains.map((item) => (
               <li
                 key={`${item.type}-${item.domain}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
               >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.domain}</p>
-                  <p className="text-xs text-slate-500">
-                    {item.type === "free" ? "Free subdomain" : "Custom domain"}
-                  </p>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{item.domain}</p>
+                    <p className="text-xs text-slate-500">
+                      {item.type === "free" ? "Free subdomain" : "Custom domain"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      item.type === "free"
+                        ? handleDeleteFreeSubdomain(item.domain)
+                        : handleDeleteCustomDomain()
+                    }
+                    disabled={Boolean(isDeletingDomain) || isSavingSubdomain || isSavingCustomDomain}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {isDeletingDomain === item.domain ? (
+                      <FiLoader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FiTrash2 className="h-4 w-4" />
+                    )}
+                    Disconnect
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    item.type === "free"
-                      ? handleDeleteFreeSubdomain(item.domain)
-                      : handleDeleteCustomDomain()
-                  }
-                  disabled={Boolean(isDeletingDomain) || isSavingSubdomain || isSavingCustomDomain}
-                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-                >
-                  {isDeletingDomain === item.domain ? (
-                    <FiLoader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FiTrash2 className="h-4 w-4" />
-                  )}
-                  Disconnect
-                </button>
+                
+                {isLocalhost && item.type === "free" && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+                    <p className="mb-1 font-semibold">Working links:</p>
+                    <p>
+                      <span className="font-medium">Development:</span>{" "}
+                      <span className="font-mono">http://{sanitizeCustomDomain(item.domain.replace(".businessbuilder.com", ""))}.localhost:3000</span>
+                    </p>
+                    <p>
+                      <span className="font-medium">Production:</span>{" "}
+                      <span className="font-mono">{item.domain}</span>
+                    </p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -70,10 +70,11 @@ export function useAuthActions() {
       router.push(redirectUrl);
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: err.message || "Invalid email or password.",
+        error: message || "Invalid email or password.",
       };
     }
   };
@@ -90,14 +91,14 @@ export function useAuthActions() {
 
       if (!existingUserData) {
         // Create new user data in localStorage for Google sign-in users
-        const userData: any = {
+        const userData: Partial<User> = {
           id: user.uid,
           email: user.email || "",
           firstName: user.displayName?.split(" ")[0] || "",
           lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
           role: "user",
           country: "",
-          dob: new Date().toISOString(),
+          dob: new Date(),
           phone: "",
           photoURL: user.photoURL || "",
           address: "",
@@ -110,14 +111,14 @@ export function useAuthActions() {
             totalOrders: 0,
             boughtProducts: [],
           },
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(),
           paymentMethods: [],
           consent: {
             marketingEmails: false,
             termsOfService: true,
             privacyPolicy: true,
           },
-        };
+        } as Partial<User>;
 
         setLocalStorageItem(userDataKey, userData);
       }
@@ -147,10 +148,11 @@ export function useAuthActions() {
       router.push(redirectUrl);
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: err.message || "Google sign-in failed.",
+        error: message || "Google sign-in failed.",
       };
     }
   };
@@ -201,7 +203,7 @@ export function useAuthActions() {
       // }
 
       // Create comprehensive user data in localStorage
-      const userData: any = {
+      const userData: Partial<User> = {
         id: user.uid,
         email: user.email || "",
         firstName: name.split(" ")[0] || "",
@@ -209,8 +211,8 @@ export function useAuthActions() {
         role: "user",
         country: additionalData?.country || "",
         dob: additionalData?.dateOfBirth
-          ? new Date(additionalData.dateOfBirth).toISOString()
-          : new Date().toISOString(),
+          ? new Date(additionalData.dateOfBirth)
+          : new Date(),
         phone: additionalData?.phone || "",
         photoURL: photoURL,
         address: additionalData?.address || "",
@@ -223,14 +225,14 @@ export function useAuthActions() {
           totalOrders: 0,
           boughtProducts: [],
         },
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         paymentMethods: [],
         consent: {
           marketingEmails: false,
           termsOfService: true,
           privacyPolicy: true,
         },
-      };
+      } as Partial<User>;
 
       setLocalStorageItem(`user_${user.uid}`, userData);
       // Save user profile to Firestore
@@ -255,10 +257,11 @@ export function useAuthActions() {
       router.push("/onboarding");
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: err.message || "An error occurred during sign up.",
+        error: message || "An error occurred during sign up.",
       };
     }
   };
@@ -275,14 +278,14 @@ export function useAuthActions() {
 
       if (!existingUserData) {
         // Create user data for new Google users in localStorage
-        const userData: any = {
+        const userData: Partial<User> = {
           id: user.uid,
           email: user.email || "",
           firstName: user.displayName?.split(" ")[0] || "",
           lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
           role: "user",
           country: "",
-          dob: new Date().toISOString(),
+          dob: new Date(),
           phone: "",
           photoURL: user.photoURL || "",
           address: "",
@@ -295,14 +298,14 @@ export function useAuthActions() {
             totalOrders: 0,
             boughtProducts: [],
           },
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(),
           paymentMethods: [],
           consent: {
             marketingEmails: false,
             termsOfService: true,
             privacyPolicy: true,
           },
-        };
+        } as Partial<User>;
 
         setLocalStorageItem(userDataKey, userData);
         // Save user profile to Firestore
@@ -348,10 +351,11 @@ export function useAuthActions() {
       }
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: err.message || "Google sign-up failed.",
+        error: message || "Google sign-up failed.",
       };
     }
   };
@@ -361,10 +365,11 @@ export function useAuthActions() {
       await firebaseSignOut(auth);
       router.push("/");
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
-        error: err.message || "Sign out failed.",
+        error: message || "Sign out failed.",
       };
     }
   };

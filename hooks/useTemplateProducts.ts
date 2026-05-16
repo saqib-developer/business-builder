@@ -33,12 +33,16 @@ export function useTemplateProducts(options?: UseTemplateProductsOptions) {
 
   useEffect(() => {
     if (!targetUserId) {
-      setProducts([]);
-      setIsLoading(false);
+      // Defer state updates to avoid synchronous setState inside effect
+      setTimeout(() => {
+        setProducts([]);
+        setIsLoading(false);
+      }, 0);
       return;
     }
 
-    setIsLoading(true);
+    // Defer to avoid synchronous setState inside effect
+    setTimeout(() => setIsLoading(true), 0);
     const unsubscribe = subscribeToUserProducts(targetUserId, (items) => {
       const mapped = items.map((item) => ({
         id: item.id,

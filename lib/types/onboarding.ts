@@ -44,13 +44,13 @@ export interface WebsiteSetup {
 export interface WebsiteConfig {
   templateId?: string;
   isPublished?: boolean;
-  hosting?: any;
+  hosting?: unknown;
   theme?: {
     primaryColor?: string;
     secondaryColor?: string;
   };
   content?: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

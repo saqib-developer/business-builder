@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiArrowRight,
   FiCheckCircle,
@@ -33,6 +33,17 @@ export default function Step4SocialMedia({
     }
   );
   const [showSkipModal, setShowSkipModal] = useState(false);
+
+  useEffect(() => {
+    if (showSkipModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showSkipModal]);
 
   const platforms = [
     {

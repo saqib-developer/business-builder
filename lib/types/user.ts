@@ -21,7 +21,7 @@ export interface User {
     boughtProducts: string[];
   };
   createdAt: Date;
-  paymentMethods: any[];
+  paymentMethods: unknown[];
   consent: {
     marketingEmails: boolean;
     termsOfService: boolean;

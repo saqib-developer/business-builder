@@ -2,14 +2,23 @@
 
 import { MOTIVATIONAL_QUOTES } from "@/lib/types/onboarding";
 import { FiStar } from "react-icons/fi";
+import { useEffect, useState } from "react";
 
 interface MotivationalQuoteProps {
   index?: number;
 }
 
 export default function MotivationalQuote({ index }: MotivationalQuoteProps) {
-  // If no index provided, pick a random quote
-  const quoteIndex = index ?? Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+  const [randIndex, setRandIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof index === "undefined") {
+      // Defer to avoid synchronous setState in effect
+      setTimeout(() => setRandIndex(Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)), 0);
+    }
+  }, [index]);
+
+  const quoteIndex = index ?? (randIndex ?? 0);
   const quote = MOTIVATIONAL_QUOTES[quoteIndex];
 
   return (
@@ -22,7 +31,7 @@ export default function MotivationalQuote({ index }: MotivationalQuoteProps) {
         </div>
         <div className="flex-1">
           <blockquote className="text-xl md:text-2xl font-medium text-gray-800 italic mb-3 leading-relaxed">
-            "{quote.text}"
+            &ldquo;{quote.text}&rdquo;
           </blockquote>
           <p className="text-gray-600 font-semibold">— {quote.author}</p>
         </div>

@@ -200,8 +200,9 @@ export default function ChatInterface({
           );
           imageUrl = uploadResult.url || undefined;
           convexStorageId = uploadResult.storageId;
-        } catch (uploadErr: any) {
-          setError(uploadErr.message || "Failed to upload image");
+        } catch (uploadErr: unknown) {
+          const message = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+          setError(message || "Failed to upload image");
           setIsSending(false);
           return;
         }
@@ -223,9 +224,10 @@ export default function ChatInterface({
       // Clear inputs
       setNewMessage("");
       clearSelectedImage();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error sending message:", err);
-      setError(err.message || "Failed to send message");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to send message");
       toast.error("Failed to send message");
     } finally {
       setIsInitializingConversation(false);
@@ -240,15 +242,21 @@ export default function ChatInterface({
     }
   };
 
-  const formatTime = (timestamp: any) => {
+  const formatTime = (timestamp: unknown) => {
     if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const hasToDate = (typeof timestamp === "object" && timestamp !== null && "toDate" in (timestamp as object));
+    const date = hasToDate
+      ? (timestamp as { toDate: () => Date }).toDate()
+      : new Date(timestamp as string | number);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const formatDate = (timestamp: any) => {
+  const formatDate = (timestamp: unknown) => {
     if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const hasToDate = (typeof timestamp === "object" && timestamp !== null && "toDate" in (timestamp as object));
+    const date = hasToDate
+      ? (timestamp as { toDate: () => Date }).toDate()
+      : new Date(timestamp as string | number);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -272,7 +280,7 @@ export default function ChatInterface({
   );
 
   // Extract unique images from messages (deduplicated by URL)
-  const uniqueImageMap = new Map<string, { url: string; sender: string; senderType: string; timestamp: any }>();
+  const uniqueImageMap = new Map<string, { url: string; sender: string; senderType: string; timestamp: unknown }>();
   messages.forEach((msg) => {
     if (msg.imageUrl && !uniqueImageMap.has(msg.imageUrl)) {
       uniqueImageMap.set(msg.imageUrl, {

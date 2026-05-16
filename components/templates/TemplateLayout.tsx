@@ -33,11 +33,11 @@ export default function TemplateLayout({
   useEffect(() => {
     const view = searchParams.get("view");
     if (view === "shop" || view === "about" || view === "home") {
-      setCurrentPage(view);
+      setTimeout(() => setCurrentPage(view as TemplatePage), 0);
       return;
     }
 
-    setCurrentPage(initialPage);
+    setTimeout(() => setCurrentPage(initialPage), 0);
   }, [searchParams, initialPage]);
 
   const businessName = config?.content?.heroHeadline || brandSettings?.businessName || "My Business";

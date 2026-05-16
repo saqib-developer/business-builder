@@ -21,12 +21,14 @@ import Link from "next/link";
 
 type ConversationType = "logo" | "wordpress" | "custom-code";
 
+type OnboardingDataPartial = Record<string, unknown> | null;
+
 interface ChatConfig {
   title: string;
   subtitle: string;
   recipientName: string;
   icon: React.ReactNode;
-  requiredCondition: (onboardingData: any) => boolean;
+  requiredCondition: (onboardingData: OnboardingDataPartial) => boolean;
   fallbackMessage: string;
   fallbackAction: string;
   fallbackLink: string;
@@ -38,7 +40,11 @@ const chatConfigs: Record<ConversationType, ChatConfig> = {
     subtitle: "Chat with our design team about your logo",
     recipientName: "Design Team",
     icon: <FiMessageCircle className="w-5 h-5" />,
-    requiredCondition: (data) => data?.logo?.type === "custom",
+    requiredCondition: (data) => {
+      const d = data as OnboardingDataPartial;
+      const logo = (d && (d.logo as Record<string, unknown>)) || undefined;
+      return (logo?.type as string) === "custom";
+    },
     fallbackMessage:
       'You don\'t have an active custom design request. To chat with our design team, please select "Custom Design" during the logo setup step in onboarding.',
     fallbackAction: "Go to Logo Setup",
@@ -49,7 +55,11 @@ const chatConfigs: Record<ConversationType, ChatConfig> = {
     subtitle: "Chat with our team about your WordPress website",
     recipientName: "Web Team",
     icon: <FiGlobe className="w-5 h-5" />,
-    requiredCondition: (data) => data?.website?.type === "wordpress",
+    requiredCondition: (data) => {
+      const d = data as OnboardingDataPartial;
+      const website = (d && (d.website as Record<string, unknown>)) || undefined;
+      return (website?.type as string) === "wordpress";
+    },
     fallbackMessage:
       'You don\'t have an active WordPress setup request. To chat with our team, please select "WordPress" during the website setup step in onboarding.',
     fallbackAction: "Go to Website Setup",
@@ -60,7 +70,11 @@ const chatConfigs: Record<ConversationType, ChatConfig> = {
     subtitle: "Chat with our developers about your custom website",
     recipientName: "Dev Team",
     icon: <FiGlobe className="w-5 h-5" />,
-    requiredCondition: (data) => data?.website?.type === "custom",
+    requiredCondition: (data) => {
+      const d = data as OnboardingDataPartial;
+      const website = (d && (d.website as Record<string, unknown>)) || undefined;
+      return (website?.type as string) === "custom";
+    },
     fallbackMessage:
       'You don\'t have an active custom development request. To chat with our team, please select "Custom Code" during the website setup step in onboarding.',
     fallbackAction: "Go to Website Setup",
@@ -138,9 +152,10 @@ function UserChatPageContent() {
       );
 
       setConversation(conv);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error loading chat data:", err);
-      setError(err.message || "Failed to load chat");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to load chat");
     } finally {
       setIsLoading(false);
     }
