@@ -434,6 +434,14 @@ export default function DashboardPage() {
                 Domain & Hosting
               </button>
               <button
+                type="button"
+                onClick={() => router.push("/community")}
+                className="inline-flex items-center gap-2 rounded-lg border border-sky-300 bg-white/10 px-4 py-2 font-medium text-white transition-colors hover:bg-white/20"
+              >
+                <FiMessageCircle className="h-4 w-4" />
+                Chat with Community
+              </button>
+              <button
                 onClick={() => setActiveTab("launch-store")}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                   activeTab === "launch-store"
