@@ -551,14 +551,28 @@ export default function DomainHostingSection({
                 <FiGlobe className="h-4 w-4" />
                 DNS Setup Instructions for {normalizedCustomDomainPreview}
               </p>
-              <ol className="list-decimal space-y-1 pl-5 text-sm text-blue-900">
-                <li>Log in to your domain provider account.</li>
-                <li>Open DNS management for your domain.</li>
-                <li>Add a new CNAME record.</li>
-                <li>Set Host/Name to www.</li>
-                <li>Set Points to / Target to cname.vercel-dns.com.</li>
-                <li>Save changes and wait for DNS propagation.</li>
-              </ol>
+              <div className="space-y-3 text-sm text-blue-900">
+                <p>
+                  Add the domain in Vercel first, then update DNS at your domain provider.
+                </p>
+                <ol className="list-decimal space-y-1 pl-5">
+                  <li>Log in to your domain provider account.</li>
+                  <li>Open DNS management for {normalizedCustomDomainPreview}.</li>
+                  <li>
+                    Add a CNAME record for <span className="font-semibold">www</span> pointing to{' '}
+                    <span className="font-semibold">cname.vercel-dns.com</span>.
+                  </li>
+                  <li>
+                    If you want the root domain ({normalizedCustomDomainPreview}) to work too, add it in Vercel and follow the
+                    DNS records shown there. Most providers use an A record or ALIAS/ANAME for the apex domain.
+                  </li>
+                  <li>Save the changes and wait for DNS propagation.</li>
+                </ol>
+                <p className="rounded-lg border border-blue-200 bg-white/70 p-3 text-xs leading-5 text-blue-800">
+                  Tip: after the DNS update, use the <span className="font-semibold">www</span> version as the primary
+                  site address unless your registrar supports an apex alias record.
+                </p>
+              </div>
             </div>
           )}
 
