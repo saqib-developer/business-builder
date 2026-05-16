@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { FiCheckCircle, FiExternalLink, FiLoader, FiGlobe, FiTrash2 } from "react-icons/fi";
+import { FiCopy } from "react-icons/fi";
 import { firestore } from "@/lib/firebase";
 import { OnboardingData } from "@/lib/types/onboarding";
 
@@ -56,6 +57,7 @@ export default function DomainHostingSection({
   const [isSavingSubdomain, setIsSavingSubdomain] = useState(false);
   const [isSavingCustomDomain, setIsSavingCustomDomain] = useState(false);
   const [isDeletingDomain, setIsDeletingDomain] = useState<string | null>(null);
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLocalhost, setIsLocalhost] = useState(false);
@@ -436,6 +438,15 @@ export default function DomainHostingSection({
   const namecheapUrl = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domainSearchKeyword || "mybusiness")}.com`;
 
   const normalizedCustomDomainPreview = sanitizeCustomDomain(customDomainInput);
+  const copyToClipboard = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedValue(label);
+      window.setTimeout(() => setCopiedValue((current) => (current === label ? null : current)), 1200);
+    } catch {
+      setError("Copy failed. Please copy the value manually.");
+    }
+  };
 
   const activeDomains = [
     ...ownedFreeSubdomains.map((domain) => ({ type: "free" as const, domain })),
@@ -571,24 +582,58 @@ export default function DomainHostingSection({
               </p>
               <div className="space-y-3 text-sm text-blue-900">
                 <p>
-                  Add the domain in Vercel first, then update DNS at your domain provider.
+                  Add these exact DNS records at your domain provider. Keep both records active so the root domain and
+                  www version resolve correctly.
                 </p>
-                <ol className="list-decimal space-y-1 pl-5">
-                  <li>Log in to your domain provider account.</li>
-                  <li>Open DNS management for {normalizedCustomDomainPreview}.</li>
-                  <li>
-                    Add a CNAME record for <span className="font-semibold">www</span> pointing to{' '}
-                    <span className="font-semibold">cname.vercel-dns.com</span>.
-                  </li>
-                  <li>
-                    If you want the root domain ({normalizedCustomDomainPreview}) to work too, add it in Vercel and follow the
-                    DNS records shown there. Most providers use an A record or ALIAS/ANAME for the apex domain.
-                  </li>
-                  <li>Save the changes and wait for DNS propagation.</li>
-                </ol>
+                <div className="overflow-hidden rounded-xl border border-blue-200 bg-white">
+                  <div className="grid grid-cols-12 gap-2 border-b border-blue-100 bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                    <div className="col-span-3">Type</div>
+                    <div className="col-span-3">Name</div>
+                    <div className="col-span-5">Value</div>
+                    <div className="col-span-1 text-right">Copy</div>
+                  </div>
+                  <div className="grid grid-cols-12 items-center gap-2 border-b border-blue-100 px-4 py-3">
+                    <div className="col-span-3 font-semibold text-slate-900">A</div>
+                    <div className="col-span-3 font-mono text-slate-700">@</div>
+                    <div className="col-span-5 flex items-center gap-2 font-mono text-slate-900">
+                      <span>216.198.79.1</span>
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard("216.198.79.1", "a-record")}
+                        className="inline-flex items-center justify-center rounded-md border border-blue-200 p-2 text-blue-700 hover:bg-blue-50"
+                        aria-label="Copy A record value"
+                      >
+                        <FiCopy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-12 items-center gap-2 px-4 py-3">
+                    <div className="col-span-3 font-semibold text-slate-900">CNAME</div>
+                    <div className="col-span-3 font-mono text-slate-700">www</div>
+                    <div className="col-span-5 flex items-center gap-2 font-mono text-slate-900">
+                      <span>cname.vercel-dns.com</span>
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard("cname.vercel-dns.com", "cname-record")}
+                        className="inline-flex items-center justify-center rounded-md border border-blue-200 p-2 text-blue-700 hover:bg-blue-50"
+                        aria-label="Copy CNAME record value"
+                      >
+                        <FiCopy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {copiedValue && (
+                  <p className="text-xs font-medium text-emerald-700">
+                    Copied successfully.
+                  </p>
+                )}
                 <p className="rounded-lg border border-blue-200 bg-white/70 p-3 text-xs leading-5 text-blue-800">
-                  Tip: after the DNS update, use the <span className="font-semibold">www</span> version as the primary
-                  site address unless your registrar supports an apex alias record.
+                  After saving DNS, wait for propagation and then verify the domain in Vercel.
                 </p>
               </div>
             </div>

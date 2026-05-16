@@ -59,7 +59,25 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    const vercelData = (await vercelResponse.json()) as Record<string, unknown>;
+    let vercelData: Record<string, unknown> = {};
+    try {
+      vercelData = (await vercelResponse.json()) as Record<string, unknown>;
+    } catch {
+      vercelData = {};
+    }
+
+    if (vercelResponse.status === 409) {
+      return NextResponse.json(
+        {
+          success: true,
+          domain,
+          alreadyAttached: true,
+          verificationRecords:
+            (vercelData?.verificationRecords as Array<Record<string, string>> | undefined) || [],
+        },
+        { status: 200 },
+      );
+    }
 
     if (!vercelResponse.ok) {
       // Handle specific Vercel errors
