@@ -15,7 +15,7 @@ function sanitizeSubdomainPrefix(value: string): string {
 }
 
 function getConfiguredRootDomain(): string {
-  return normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "");
+  return normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "businessbuilders.tech");
 }
 
 export function normalizeDomain(value: string): string {
@@ -82,6 +82,10 @@ export function isLikelyStorefrontHost(hostname: string): boolean {
 
   const configuredRoot = getConfiguredRootDomain();
   if (configuredRoot && host === configuredRoot) {
+    return false;
+  }
+
+  if (configuredRoot && host === `www.${configuredRoot}`) {
     return false;
   }
 

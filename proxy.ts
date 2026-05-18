@@ -6,11 +6,15 @@ function normalizeHost(value: string): string {
 }
 
 function getConfiguredRootDomain(): string {
-  return normalizeHost(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "");
+  return normalizeHost(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "businessbuilders.tech");
 }
 
 function extractTenantSubdomain(host: string, configuredRoot: string): string {
   if (!host) {
+    return "";
+  }
+
+  if (configuredRoot && (host === configuredRoot || host === `www.${configuredRoot}`)) {
     return "";
   }
 
@@ -42,7 +46,7 @@ export function proxy(request: NextRequest) {
   if (
     incomingHost === "localhost" ||
     incomingHost === "127.0.0.1" ||
-    (configuredRoot && incomingHost === configuredRoot)
+    (configuredRoot && (incomingHost === configuredRoot || incomingHost === `www.${configuredRoot}`))
   ) {
     return NextResponse.next();
   }
