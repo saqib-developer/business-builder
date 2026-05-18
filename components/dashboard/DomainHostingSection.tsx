@@ -206,10 +206,14 @@ export default function DomainHostingSection({
 
       if (userDoc.exists()) {
         console.log("Updating existing user document");
-        await updateDoc(userRef, { onboarding: next });
+        // Clean undefined values before updating
+        const cleanData = JSON.parse(JSON.stringify(next));
+        await updateDoc(userRef, { onboarding: cleanData });
       } else {
         console.log("Creating new user document with merge");
-        await setDoc(userRef, { onboarding: next }, { merge: true });
+        // Clean undefined values before creating
+        const cleanData = JSON.parse(JSON.stringify(next));
+        await setDoc(userRef, { onboarding: cleanData }, { merge: true });
       }
       
       console.log("Successfully persisted onboarding to Firestore");
