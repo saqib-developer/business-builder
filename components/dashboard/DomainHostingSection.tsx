@@ -12,6 +12,7 @@ import {
 import { FiCheckCircle, FiExternalLink, FiLoader, FiGlobe, FiTrash2 } from "react-icons/fi";
 import { FiCopy } from "react-icons/fi";
 import { firestore } from "@/lib/firebase";
+import { normalizeDomain } from "@/lib/storefront";
 import { OnboardingData } from "@/lib/types/onboarding";
 
 interface DomainHostingSectionProps {
@@ -484,6 +485,7 @@ export default function DomainHostingSection({
   const domainSearchKeyword = sanitizeSubdomain(
     subdomainInput || sanitizedBusinessName || businessName || "",
   );
+  const configuredRootDomain = normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "businessbuilders.tech");
 
   const goDaddyUrl = `https://www.godaddy.com/domainsearch/find?domainToCheck=${encodeURIComponent(domainSearchKeyword || "mybusiness")}.com`;
   const namecheapUrl = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domainSearchKeyword || "mybusiness")}.com`;
@@ -760,11 +762,18 @@ export default function DomainHostingSection({
                     <p className="mb-1 font-semibold">Working links:</p>
                     <p>
                       <span className="font-medium">Development:</span>{" "}
-                      <span className="font-mono">http://{sanitizeCustomDomain(item.domain.replace(".businessbuilders.tech", ""))}.localhost:3000</span>
+                      <span className="font-mono">http://{sanitizeCustomDomain(item.domain.replace(`.${configuredRootDomain}`, ""))}.localhost:3000</span>
                     </p>
                     <p>
                       <span className="font-medium">Production:</span>{" "}
-                      <span className="font-mono">{item.domain}</span>
+                      <a
+                        href={`https://${configuredRootDomain}/?domain=${encodeURIComponent(item.domain)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono underline decoration-dashed underline-offset-2"
+                      >
+                        {configuredRootDomain}/?domain={item.domain}
+                      </a>
                     </p>
                   </div>
                 )}

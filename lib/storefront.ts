@@ -56,7 +56,7 @@ function extractSubdomainPrefix(host: string): string {
   }
 
   if (normalized.endsWith(".businessbuilders.tech")) {
-    const withoutRoot = normalized.replace(/\.businessbuilder\.com$/, "");
+    const withoutRoot = normalized.replace(/\.businessbuilders\.tech$/, "");
     return sanitizeSubdomainPrefix(withoutRoot.split(".")[0] || "");
   }
 
@@ -242,7 +242,7 @@ export async function resolveStorefrontByDomain(domain: string): Promise<Storefr
   }
 
   const legacyPrefix = normalizedDomain.endsWith(".businessbuilders.tech")
-    ? normalizedDomain.replace(/\.businessbuilder\.com$/, "")
+    ? normalizedDomain.replace(/\.businessbuilders\.tech$/, "")
     : "";
   if (!legacyPrefix) {
     return null;

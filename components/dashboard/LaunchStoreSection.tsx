@@ -79,7 +79,25 @@ export default function LaunchStoreSection({
   const isPublished = Boolean(onboardingData?.website?.config?.isPublished);
   const hosting = onboardingData?.website?.config?.hosting || {};
   const activeDomain = useMemo(() => getPrimaryLiveDomain(hosting), [hosting]);
-  const activeLink = activeDomain ? `https://${normalizeDomain(activeDomain)}` : "";
+  const activeLink = useMemo(() => {
+    if (!activeDomain) {
+      return "";
+    }
+
+    const normalizedActiveDomain = normalizeDomain(activeDomain);
+    const configuredRoot = normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "businessbuilders.tech");
+    const isFreeSubdomain =
+      Boolean(configuredRoot) &&
+      normalizedActiveDomain.endsWith(`.${configuredRoot}`) &&
+      normalizedActiveDomain !== configuredRoot;
+
+    if (isFreeSubdomain) {
+      const origin = typeof window !== "undefined" ? window.location.origin : `https://${configuredRoot}`;
+      return `${origin}/?domain=${encodeURIComponent(normalizedActiveDomain)}`;
+    }
+
+    return `https://${normalizedActiveDomain}`;
+  }, [activeDomain]);
 
   const persistOnboarding = async (next: Partial<OnboardingData>) => {
     const userRef = doc(firestore, "users", userId);
