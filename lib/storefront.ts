@@ -55,7 +55,7 @@ function extractSubdomainPrefix(host: string): string {
     return sanitizeSubdomainPrefix(firstLabel);
   }
 
-  if (normalized.endsWith(".businessbuilder.com")) {
+  if (normalized.endsWith(".businessbuilders.tech")) {
     const withoutRoot = normalized.replace(/\.businessbuilder\.com$/, "");
     return sanitizeSubdomainPrefix(withoutRoot.split(".")[0] || "");
   }
@@ -107,7 +107,7 @@ export function isLikelyStorefrontHost(hostname: string): boolean {
     return true;
   }
 
-  const appRoot = "businessbuilder.com";
+  const appRoot = "businessbuilders.tech";
   if (host === "localhost" || host === "127.0.0.1") {
     return false;
   }
@@ -166,7 +166,7 @@ export function getPrimaryLiveDomain(hosting: unknown): string {
   }
 
   if (h.freeSubdomain as string) {
-    return `${sanitizeSubdomainPrefix(h.freeSubdomain as string)}.businessbuilder.com`;
+    return `${sanitizeSubdomainPrefix(h.freeSubdomain as string)}.businessbuilders.tech`;
   }
 
   return "";
@@ -180,7 +180,7 @@ export async function resolveStorefrontByDomain(domain: string): Promise<Storefr
 
   const usersRef = collection(firestore, "users");
   const subdomainPrefix = extractSubdomainPrefix(normalizedDomain);
-  const canonicalFreeDomain = subdomainPrefix ? `${subdomainPrefix}.businessbuilder.com` : "";
+  const canonicalFreeDomain = subdomainPrefix ? `${subdomainPrefix}.businessbuilders.tech` : "";
 
   const exactCustomDomainQuery = query(
     usersRef,
@@ -241,7 +241,7 @@ export async function resolveStorefrontByDomain(domain: string): Promise<Storefr
     }
   }
 
-  const legacyPrefix = normalizedDomain.endsWith(".businessbuilder.com")
+  const legacyPrefix = normalizedDomain.endsWith(".businessbuilders.tech")
     ? normalizedDomain.replace(/\.businessbuilder\.com$/, "")
     : "";
   if (!legacyPrefix) {

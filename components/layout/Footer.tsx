@@ -17,7 +17,7 @@ export default function Footer() {
 
     const host = window.location.hostname.toLowerCase();
     const isTenantHost =
-      host.endsWith(".businessbuilder.com") ||
+      host.endsWith(".businessbuilders.tech") ||
       host.endsWith(".localhost") ||
       host.endsWith(".lvh.me") ||
       host.endsWith(".vercel.app");

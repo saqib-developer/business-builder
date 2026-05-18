@@ -81,7 +81,7 @@ export default function DomainHostingSection({
     ((onboardingData?.website?.config as Record<string, unknown> | undefined)?.hosting as Record<string, unknown> | undefined)?.method as RoutingMethod | undefined;
 
   const syncLocalHostingState = (hosting: HostingConfig) => {
-    const legacy = hosting.freeSubdomain ? `${sanitizeSubdomain(hosting.freeSubdomain)}.businessbuilder.com` : "";
+    const legacy = hosting.freeSubdomain ? `${sanitizeSubdomain(hosting.freeSubdomain)}.businessbuilders.tech` : "";
     const normalizedFree = Array.from(
       new Set(
         (hosting.freeSubdomains || [])
@@ -160,7 +160,7 @@ export default function DomainHostingSection({
           {};
 
         const legacyFree = remoteHosting.freeSubdomain
-          ? `${sanitizeSubdomain(remoteHosting.freeSubdomain)}.businessbuilder.com`
+          ? `${sanitizeSubdomain(remoteHosting.freeSubdomain)}.businessbuilders.tech`
           : "";
 
         const remoteFree = new Set(
@@ -244,7 +244,7 @@ export default function DomainHostingSection({
       return;
     }
 
-    const fullSubdomain = `${cleanedPrefix}.businessbuilder.com`;
+    const fullSubdomain = `${cleanedPrefix}.businessbuilders.tech`;
     if (ownedFreeSubdomains.includes(fullSubdomain)) {
       setError("You already claimed this free subdomain.");
       return;
@@ -552,7 +552,7 @@ export default function DomainHostingSection({
               className="w-full bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none"
             />
             <span className="border-l border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
-              .businessbuilder.com
+              .businessbuilders.tech
             </span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
@@ -571,7 +571,7 @@ export default function DomainHostingSection({
                 </p>
                 <p>
                   <span className="font-medium">Production:</span>{" "}
-                  <span className="font-mono">{sanitizeSubdomain(subdomainInput)}.businessbuilder.com</span>
+                  <span className="font-mono">{sanitizeSubdomain(subdomainInput)}.businessbuilders.tech</span>
                 </p>
               </div>
             </div>
@@ -760,7 +760,7 @@ export default function DomainHostingSection({
                     <p className="mb-1 font-semibold">Working links:</p>
                     <p>
                       <span className="font-medium">Development:</span>{" "}
-                      <span className="font-mono">http://{sanitizeCustomDomain(item.domain.replace(".businessbuilder.com", ""))}.localhost:3000</span>
+                      <span className="font-mono">http://{sanitizeCustomDomain(item.domain.replace(".businessbuilders.tech", ""))}.localhost:3000</span>
                     </p>
                     <p>
                       <span className="font-medium">Production:</span>{" "}
