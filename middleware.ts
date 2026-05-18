@@ -33,7 +33,7 @@ function extractTenantSubdomain(host: string, configuredRoot: string): string {
   return "";
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const incomingHost = normalizeHost(
     request.headers.get("x-forwarded-host") ||
       request.headers.get("host") ||

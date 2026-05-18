@@ -91,6 +91,21 @@ export default function LaunchStoreSection({
       normalizedActiveDomain.endsWith(`.${configuredRoot}`) &&
       normalizedActiveDomain !== configuredRoot;
 
+    const isLocal = typeof window !== "undefined" && (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+    );
+
+    if (isLocal) {
+      if (isFreeSubdomain) {
+        const subdomainPrefix = normalizedActiveDomain.replace(`.${configuredRoot}`, "");
+        const port = window.location.port ? `:${window.location.port}` : "";
+        return `http://${subdomainPrefix}.localhost${port}`;
+      }
+      const port = window.location.port ? `:${window.location.port}` : "";
+      return `http://localhost${port}/?domain=${encodeURIComponent(normalizedActiveDomain)}`;
+    }
+
     if (isFreeSubdomain) {
       const origin = typeof window !== "undefined" ? window.location.origin : `https://${configuredRoot}`;
       return `${origin}/?domain=${encodeURIComponent(normalizedActiveDomain)}`;
