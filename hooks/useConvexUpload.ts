@@ -27,6 +27,54 @@ interface UseConvexUploadReturn {
   reset: () => void;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, stage: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Timeout while ${stage}.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }) as Promise<T>;
+}
+
+function getDetailedUploadErrorMessage(error: unknown, stage: string): string {
+  const rawMessage = error instanceof Error ? error.message : String(error || "");
+  const message = rawMessage.toLowerCase();
+
+  if (message.includes("timeout")) {
+    return `Upload timed out while ${stage}. This usually means the upload service is unreachable or very slow.`;
+  }
+
+  if (
+    message.includes("websocket") ||
+    message.includes("convex") ||
+    message.includes("connection") ||
+    message.includes("network")
+  ) {
+    return "Cannot connect to the upload service (Convex). Check internet connection or Convex deployment status, then retry.";
+  }
+
+  if (message.includes("failed to fetch") || message.includes("load failed")) {
+    return `Network request failed while ${stage}. The server may be unreachable from your browser.`;
+  }
+
+  if (message.includes("unauthorized") || message.includes("forbidden") || message.includes("401") || message.includes("403")) {
+    return "Upload authorization failed. Your upload token/session may be invalid. Please sign in again and retry.";
+  }
+
+  if (message.includes("invalid") || message.includes("file type") || message.includes("size")) {
+    return rawMessage;
+  }
+
+  return rawMessage || `Upload failed while ${stage}.`;
+}
+
 export function useConvexUpload(): UseConvexUploadReturn {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -45,6 +93,8 @@ export function useConvexUpload(): UseConvexUploadReturn {
     setError(null);
 
     try {
+      let currentStage = "validating file";
+
       // Validate file size (max 10MB)
       const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
@@ -70,40 +120,42 @@ export function useConvexUpload(): UseConvexUploadReturn {
       setUploadProgress(10);
 
       // Get upload URL from Convex
-      const uploadUrl = await generateUploadUrl();
+      currentStage = "requesting upload URL";
+      const uploadUrl = await withTimeout(generateUploadUrl(), 15000, currentStage);
       setUploadProgress(30);
 
       // Upload file to Convex storage
-      const response = await fetch(uploadUrl, {
+      currentStage = "uploading file to storage";
+      const response = await withTimeout(fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
-      });
+      }), 30000, currentStage);
 
       if (!response.ok) {
-        throw new Error("Failed to upload file to storage");
+        throw new Error(`Failed to upload file to storage (HTTP ${response.status})`);
       }
 
       const { storageId } = await response.json();
       setUploadProgress(70);
 
       // Save file record and get URL
-      const result = await saveFileRecord({
+      currentStage = "saving file metadata";
+      const result = await withTimeout(saveFileRecord({
         storageId,
         userId,
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
         category,
-      });
+      }), 15000, currentStage);
 
       setUploadProgress(100);
       setIsUploading(false);
 
       return result as UploadResult;
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      const errorMessage = message || "An error occurred while uploading the file";
+      const errorMessage = getDetailedUploadErrorMessage(err, "processing upload");
       setError(errorMessage);
       setIsUploading(false);
       throw new Error(errorMessage);

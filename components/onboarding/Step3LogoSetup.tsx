@@ -45,6 +45,7 @@ export default function Step3LogoSetup({
     isUploading,
     uploadProgress,
     error: uploadError,
+    reset: resetUploadState,
   } = useConvexUpload();
 
   const [selectedOption, setSelectedOption] = useState<
@@ -497,7 +498,17 @@ export default function Step3LogoSetup({
             {uploadError && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
                 <FiAlertCircle className="w-5 h-5 text-red-500" />
-                <span className="text-red-700 text-sm">{uploadError}</span>
+                <div className="text-left">
+                  <p className="text-red-700 text-sm font-medium">Logo upload failed.</p>
+                  <p className="text-red-700 text-sm">{uploadError}</p>
+                  <button
+                    type="button"
+                    onClick={resetUploadState}
+                    className="mt-2 text-xs font-semibold text-red-700 underline underline-offset-2 hover:text-red-800"
+                  >
+                    Clear error and try again
+                  </button>
+                </div>
               </div>
             )}
           </div>
