@@ -139,55 +139,97 @@ export default function DomainHostingSection({
   const isDomainTakenGlobally = async (candidateDomain: string): Promise<boolean> => {
     const normalizedCandidate = sanitizeCustomDomain(candidateDomain);
     if (!normalizedCandidate) {
+      console.warn("isDomainTakenGlobally: normalized candidate is empty");
       return false;
     }
 
-    const usersRef = collection(firestore, "users");
-    const snapshot = await getDocs(usersRef);
+    try {
+      console.log("isDomainTakenGlobally: checking", normalizedCandidate);
+      const usersRef = collection(firestore, "users");
+      const snapshot = await getDocs(usersRef);
+      
+      console.log("isDomainTakenGlobally: fetched", snapshot.docs.length, "users");
 
-    for (const docSnap of snapshot.docs) {
-      if (docSnap.id === userId) {
-        continue;
+      for (const docSnap of snapshot.docs) {
+        if (docSnap.id === userId) {
+          continue;
+        }
+
+        const remoteHosting =
+          (docSnap.data()?.onboarding?.website?.config?.hosting as HostingConfig | undefined) ||
+          {};
+
+        const legacyFree = remoteHosting.freeSubdomain
+          ? `${sanitizeSubdomain(remoteHosting.freeSubdomain)}.businessbuilder.com`
+          : "";
+
+        const remoteFree = new Set(
+          (remoteHosting.freeSubdomains || [])
+            .map((value) => sanitizeCustomDomain(value))
+            .concat(legacyFree ? [legacyFree] : [])
+            .filter(Boolean),
+        );
+
+        const remoteCustom = sanitizeCustomDomain(remoteHosting.customDomain || "");
+
+        if (remoteFree.has(normalizedCandidate) || remoteCustom === normalizedCandidate) {
+          console.log("isDomainTakenGlobally: domain taken by user", docSnap.id);
+          return true;
+        }
       }
 
-      const remoteHosting =
-        (docSnap.data()?.onboarding?.website?.config?.hosting as HostingConfig | undefined) ||
-        {};
-
-      const legacyFree = remoteHosting.freeSubdomain
-        ? `${sanitizeSubdomain(remoteHosting.freeSubdomain)}.businessbuilder.com`
-        : "";
-
-      const remoteFree = new Set(
-        (remoteHosting.freeSubdomains || [])
-          .map((value) => sanitizeCustomDomain(value))
-          .concat(legacyFree ? [legacyFree] : [])
-          .filter(Boolean),
-      );
-
-      const remoteCustom = sanitizeCustomDomain(remoteHosting.customDomain || "");
-
-      if (remoteFree.has(normalizedCandidate) || remoteCustom === normalizedCandidate) {
-        return true;
-      }
+      console.log("isDomainTakenGlobally: domain is available");
+      return false;
+    } catch (error) {
+      console.error("isDomainTakenGlobally: error checking domain availability:", {
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorCode: (error as any)?.code,
+      });
+      throw error;
     }
-
-    return false;
   };
 
   const persistOnboarding = async (next: Partial<OnboardingData>) => {
-    const userRef = doc(firestore, "users", userId);
-    const userDoc = await getDoc(userRef);
+    try {
+      console.log("persistOnboarding called with userId:", userId);
+      console.log("nextOnboarding structure:", {
+        hasWebsite: !!next.website,
+        hasConfig: !!next.website?.config,
+        hasHosting: !!next.website?.config?.hosting,
+      });
 
-    if (userDoc.exists()) {
-      await updateDoc(userRef, { onboarding: next });
-    } else {
-      await setDoc(userRef, { onboarding: next }, { merge: true });
+      const userRef = doc(firestore, "users", userId);
+      const userDoc = await getDoc(userRef);
+
+      console.log("User doc exists:", userDoc.exists());
+
+      if (userDoc.exists()) {
+        console.log("Updating existing user document");
+        await updateDoc(userRef, { onboarding: next });
+      } else {
+        console.log("Creating new user document with merge");
+        await setDoc(userRef, { onboarding: next }, { merge: true });
+      }
+      
+      console.log("Successfully persisted onboarding to Firestore");
+    } catch (error) {
+      console.error("Error persisting onboarding to Firestore:", {
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorCode: (error as any)?.code,
+      });
+      throw error;
     }
   };
 
   const handleSaveSubdomain = async () => {
     if (!userId) return;
+    
+    if (!onboardingData) {
+      setError("Onboarding data not loaded. Please refresh the page.");
+      return;
+    }
 
     setError(null);
     setSuccess(null);
@@ -206,6 +248,7 @@ export default function DomainHostingSection({
 
     setIsSavingSubdomain(true);
     try {
+      console.log("Checking if domain is taken globally:", fullSubdomain);
       const conflict = await isDomainTakenGlobally(fullSubdomain);
       if (conflict) {
         setError(
@@ -220,12 +263,13 @@ export default function DomainHostingSection({
         (onboardingData?.website?.config?.hosting as HostingConfig | undefined) ||
         {};
 
+      // Create a clean copy to preserve all onboarding data
       const nextOnboarding: Partial<OnboardingData> = {
-        ...(onboardingData || {}),
+        ...onboardingData,
         website: {
           type: onboardingData?.website?.type ?? null,
           templateId: onboardingData?.website?.templateId,
-          ...(onboardingData?.website || {}),
+          customizations: onboardingData?.website?.customizations,
           config: {
             ...(onboardingData?.website?.config || {}),
             hosting: {
@@ -238,6 +282,7 @@ export default function DomainHostingSection({
         },
       };
 
+      console.log("Saving subdomain to Firestore:", fullSubdomain, nextOnboarding);
       await persistOnboarding(nextOnboarding);
       localStorage.setItem(`onboarding_${userId}`, JSON.stringify(nextOnboarding));
       onOnboardingDataUpdate(nextOnboarding);
@@ -245,7 +290,9 @@ export default function DomainHostingSection({
       setSubdomainInput(cleanedPrefix);
       setSuccess("Free subdomain added successfully.");
     } catch (saveError) {
-      setError("Failed to save subdomain. Please try again.");
+      console.error("Error saving subdomain:", saveError);
+      const errorMsg = saveError instanceof Error ? saveError.message : "Unknown error";
+      setError(`Failed to save subdomain: ${errorMsg}`);
     } finally {
       setIsSavingSubdomain(false);
     }
@@ -303,11 +350,11 @@ export default function DomainHostingSection({
         {};
 
       const nextOnboarding: Partial<OnboardingData> = {
-        ...(onboardingData || {}),
+        ...onboardingData,
         website: {
           type: onboardingData?.website?.type ?? null,
           templateId: onboardingData?.website?.templateId,
-          ...(onboardingData?.website || {}),
+          customizations: onboardingData?.website?.customizations,
           config: {
             ...(onboardingData?.website?.config || {}),
             hosting: {
@@ -351,11 +398,11 @@ export default function DomainHostingSection({
           : existingHosting.method;
 
       const nextOnboarding: Partial<OnboardingData> = {
-        ...(onboardingData || {}),
+        ...onboardingData,
         website: {
           type: onboardingData?.website?.type ?? null,
           templateId: onboardingData?.website?.templateId,
-          ...(onboardingData?.website || {}),
+          customizations: onboardingData?.website?.customizations,
           config: {
             ...(onboardingData?.website?.config || {}),
             hosting: {
@@ -401,11 +448,11 @@ export default function DomainHostingSection({
           : existingHosting.method;
 
       const nextOnboarding: Partial<OnboardingData> = {
-        ...(onboardingData || {}),
+        ...onboardingData,
         website: {
           type: onboardingData?.website?.type ?? null,
           templateId: onboardingData?.website?.templateId,
-          ...(onboardingData?.website || {}),
+          customizations: onboardingData?.website?.customizations,
           config: {
             ...(onboardingData?.website?.config || {}),
             hosting: {
