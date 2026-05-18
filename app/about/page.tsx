@@ -10,6 +10,7 @@ import BoldMarketTemplate from "@/components/templates/BoldMarketTemplate";
 import ComingSoonPage from "@/components/storefront/ComingSoonPage";
 import StorefrontNotFoundPage from "@/components/storefront/StorefrontNotFoundPage";
 import {
+  isMainAppHost,
   isLikelyStorefrontHost,
   normalizeDomain,
   resolveStorefrontByDomain,
@@ -32,6 +33,15 @@ function AboutPageContent() {
       const forcedDomain = normalizeDomain(searchParams.get("domain") || "");
       const host = typeof window !== "undefined" ? normalizeDomain(window.location.hostname) : "";
       const lookupDomain = forcedDomain || host;
+
+      if (!forcedDomain && isMainAppHost(lookupDomain)) {
+        if (!isCancelled) {
+          setIsStorefrontMode(false);
+          setStorefrontData(null);
+          setIsResolvingStorefront(false);
+        }
+        return;
+      }
 
       if (!lookupDomain) {
         if (!isCancelled) {

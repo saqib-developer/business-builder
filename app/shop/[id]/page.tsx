@@ -11,7 +11,7 @@ import { FiArrowLeft, FiMessageCircle } from "react-icons/fi";
 import { getProduct, Product } from "@/lib/firebase/firestoreService";
 import ComingSoonPage from "@/components/storefront/ComingSoonPage";
 import StorefrontNotFoundPage from "@/components/storefront/StorefrontNotFoundPage";
-import { isLikelyStorefrontHost, normalizeDomain, resolveStorefrontByDomain, StorefrontResolution } from "@/lib/storefront";
+import { isMainAppHost, isLikelyStorefrontHost, normalizeDomain, resolveStorefrontByDomain, StorefrontResolution } from "@/lib/storefront";
 
 const TEMPLATE_FRAME_CLASSES: Record<TemplateId, { hero: string; card: string; button: string }> = {
   "modern-shop": {
@@ -59,6 +59,15 @@ function ProductDetailPageContent() {
       const host = typeof window !== "undefined" ? normalizeDomain(window.location.hostname) : "";
       const forcedDomain = normalizeDomain(searchParams.get("domain") || "");
       const lookupDomain = forcedDomain || host;
+
+      if (!forcedDomain && isMainAppHost(lookupDomain)) {
+        if (!isCancelled) {
+          setIsStorefrontMode(false);
+          setStorefrontData(null);
+          setIsResolvingStorefront(false);
+        }
+        return;
+      }
 
       if (!lookupDomain || (!forcedDomain && !isLikelyStorefrontHost(lookupDomain))) {
         if (!isCancelled) {

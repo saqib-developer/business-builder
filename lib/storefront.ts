@@ -18,6 +18,16 @@ function getConfiguredRootDomain(): string {
   return normalizeDomain(process.env.NEXT_PUBLIC_ROOT_DOMAIN || "businessbuilders.tech");
 }
 
+export function isMainAppHost(hostname: string): boolean {
+  const host = normalizeDomain(hostname);
+  if (!host) {
+    return false;
+  }
+
+  const configuredRoot = getConfiguredRootDomain();
+  return host === configuredRoot || host === `www.${configuredRoot}` || host === "businessbuilders.tech" || host === "www.businessbuilders.tech";
+}
+
 export function normalizeDomain(value: string): string {
   return value
     .trim()
@@ -86,6 +96,10 @@ export function isLikelyStorefrontHost(hostname: string): boolean {
   }
 
   if (configuredRoot && host === `www.${configuredRoot}`) {
+    return false;
+  }
+
+  if (isMainAppHost(host)) {
     return false;
   }
 
